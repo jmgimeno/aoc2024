@@ -29,7 +29,7 @@ object DayGenerator {
     |}""".stripMargin
 
   def javaTest(day: Int): String = s"""
-    |package ao2024j.day$day;
+    |package aoc2024j.day$day;
     |
     |import utils.IO;
     |
@@ -186,6 +186,17 @@ object DayGenerator {
       println("Day already exists")
     } else {
       generateScala(day)
+      downloadData(day)
+    }
+  }
+
+  @main def runDay(): Unit = {
+    val day = readLine("Enter day number: ").toInt
+    val resource = new java.io.File(s"days/src/main/resources/aoc2024/day$day.txt")
+    resource.getParentFile.mkdirs()
+    if (resource.exists()) {
+      println("Day already exists")
+    } else {
       downloadData(day)
     }
   }

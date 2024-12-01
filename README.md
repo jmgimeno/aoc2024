@@ -1,6 +1,6 @@
 # Advent of Code 2024
 
-- Day1: ???
+- Day1: Historian Hysteria
 - Day2: ???
 - Day3: ???
 - Day4: ???
