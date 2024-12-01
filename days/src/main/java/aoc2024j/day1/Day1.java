@@ -39,18 +39,18 @@ public class Day1 {
         return distance(unzip.first, unzip.second);
     }
 
-    long part2(List<String> data) {
-        var unzip = unzip(data);
-        var frequencies = frequencies(unzip.second);
-        return similarity(unzip.first, frequencies);
-    }
-
     Map<Integer, Long> frequencies(List<Integer> second) {
         return second.stream().collect(Collectors.groupingBy(i -> i, Collectors.counting()));
     }
 
     private long similarity(List<Integer> first, Map<Integer, Long> frequencies) {
         return first.stream().mapToLong(f -> f * frequencies.getOrDefault(f, 0L)).sum();
+    }
+
+    long part2(List<String> data) {
+        var unzip = unzip(data);
+        var frequencies = frequencies(unzip.second);
+        return similarity(unzip.first, frequencies);
     }
 
     public static void main(String[] args) {
