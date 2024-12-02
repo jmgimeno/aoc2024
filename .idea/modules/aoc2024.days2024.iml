@@ -3,7 +3,7 @@
   <component name="DisplayModuleName">
     <option name="name" value="days2024" />
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_23">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_23_PREVIEW">
     <output url="file://$MODULE_DIR$/../../days/target/scala-3.5.2/classes" />
     <output-test url="file://$MODULE_DIR$/../../days/target/scala-3.5.2/test-classes" />
     <exclude-output />

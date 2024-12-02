@@ -1,6 +1,7 @@
 ThisBuild / scalaVersion := "3.5.2"
 ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / javacOptions ++= Seq("-source", "23", "-target", "23")
+ThisBuild / javacOptions ++= Seq("-source", "23", "-target", "23", "--enable-preview")
+ThisBuild / javaOptions ++= Seq("--enable-preview")
 
 lazy val days2024 = (project in file("days"))
   .settings(
