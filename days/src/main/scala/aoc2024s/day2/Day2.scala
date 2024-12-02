@@ -1,7 +1,9 @@
 
 package aoc2024s.day2;
 
-import utils.IO;
+import utils.IO
+
+import scala.collection.IndexedSeqView
 import scala.jdk.CollectionConverters.*
 
 object Day2 {
@@ -13,32 +15,36 @@ object Day2 {
   val INCREASING: Interval = Interval(1, 3)
   val DECREASING: Interval = Interval(-3, -1)
 
-  case class Report(levels: List[Int]) {
+  case class Report(levels: IndexedSeq[Int]) {
     def isValid: Boolean =
       containsAllDifferences(levels, INCREASING)
         || containsAllDifferences(levels, DECREASING)
 
-    private def containsAllDifferences(levels: List[Int], interval: Interval): Boolean =
-      levels.sliding(2).forall {
-        case List(a, b) => interval.contains(b - a)
-      }
-
-    private def makeHole(pos: Int): Report =
-      Report(levels.take(pos) ++ levels.drop(pos + 1))
+    private def containsAllDifferences(levels: IndexedSeq[Int], interval: Interval): Boolean =
+      levels.sliding(2).forall(pair => interval.contains(pair(1) - pair(0)))
 
     def isValidWithHoles: Boolean =
-      isValid || levels.indices.exists(makeHole(_).isValid)
+      isValid || levels.indices.exists(pos => Report(HoledSeq(pos, levels)).isValid)
   }
 
   object Report {
     def parse(line: String): Report = {
-      val levels = line.split(" ").map(_.toInt).toList
+      val levels = line.split(" ").map(_.toInt).toVector
       Report(levels)
     }
   }
 
   def part1(data: List[String]): Long =
     data.map(Report.parse).count(_.isValid)
+
+  private class HoledSeq[A](hole: Int, elems: IndexedSeq[A]) extends IndexedSeq[A] {
+    def apply(idx: Int): A =
+      if (idx < hole) elems(idx)
+      else elems(idx + 1)
+
+    def length: Int =
+      elems.length - 1
+  }
 
   def part2(data: List[String]): Long = {
     data.map(Report.parse).count(_.isValidWithHoles)
