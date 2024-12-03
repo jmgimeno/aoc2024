@@ -130,22 +130,22 @@ object DayGenerator {
     |
     |  test("part1 - example data") {
     |    val data = IO.splitLinesAsList(example).asScala.toList
-    |    assertEquals(-1L, Day$day.part1(data))
+    |    assertEquals(Day$day.part1(data), -1L)
     |  }
     |
     |  test("part1 - input data") {
     |    val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList
-    |    assertEquals(-1L, Day$day.part1(data))
+    |    assertEquals(Day$day.part1(data), -1L)
     |  }
     |
     |  test("part2 - example data") {
     |    val data = IO.splitLinesAsList(example).asScala.toList
-    |    assertEquals(-1L, Day$day.part2(data))
+    |    assertEquals(Day$day.part2(data), -1L)
     |  }
     |
     |  test("part2 - input data") {
     |    val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList
-    |    assertEquals(-1L, Day$day.part2(data))
+    |    assertEquals(Day$day.part2(data), -1L)
     |  }
     |}""".stripMargin
 
