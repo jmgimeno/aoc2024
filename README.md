@@ -1,8 +1,8 @@
 # Advent of Code 2024
 
 - Day1: Historian Hysteria
-- Day2: ???
-- Day3: ???
+- Day2: Red-Nosed Reports
+- Day3: Mull It Over
 - Day4: ???
 - Day5: ???
 - Day6: ???
