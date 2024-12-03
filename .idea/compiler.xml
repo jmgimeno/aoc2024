@@ -2,9 +2,12 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
-      <module name="aoc2024" target="23" />
-      <module name="aoc2024.days2024" target="23" />
-      <module name="aoc2024.meta2024" target="23" />
+      <module name="aoc2024.days2024.main" target="23" />
+      <module name="aoc2024.days2024.test" target="23" />
+      <module name="aoc2024.main" target="23" />
+      <module name="aoc2024.meta2024.main" target="23" />
+      <module name="aoc2024.meta2024.test" target="23" />
+      <module name="aoc2024.test" target="23" />
       <module name="days2024" target="23" />
       <module name="days2024.meta2024" target="23" />
     </bytecodeTargetLevel>

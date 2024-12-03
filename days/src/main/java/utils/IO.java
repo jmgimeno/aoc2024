@@ -23,4 +23,16 @@ public class IO {
         return Arrays.stream(lines.split("\n"))
                 .toList();
     }
+
+    public static String getResourceAsString(String name) {
+        var loader = IO.class.getClassLoader();
+        try (var inputStream = loader.getResourceAsStream(name);
+             var reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            return reader.readLine();
+        } catch (IOException e) {
+            // Handle or log the exception appropriately
+            e.printStackTrace();
+            return "";
+        }
+    }
 }

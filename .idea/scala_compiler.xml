@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="aoc2024,aoc2024.days2024,aoc2024.meta2024,aoc2024_3835,days2024,days2024.meta2024" />
+    <option name="separateProdTestSources" value="true" />
+    <profile name="sbt 1" modules="aoc2024,aoc2024.days2024,aoc2024.days2024.main,aoc2024.days2024.test,aoc2024.main,aoc2024.meta2024,aoc2024.meta2024.main,aoc2024.meta2024.test,aoc2024.test,aoc2024_3835,days2024,days2024.meta2024" />
   </component>
 </project>

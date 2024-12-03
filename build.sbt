@@ -7,7 +7,7 @@ lazy val days2024 = (project in file("days"))
   .settings(
     name := "days2024",
     libraryDependencies ++=
-      Seq("org.scalameta" %% "munit" % "1.0.2" % Test,
+      Seq("org.scalameta" %% "munit" % "1.0.3" % Test,
         "com.github.sbt.junit" % "jupiter-interface" % JupiterKeys.jupiterVersion.value % Test
       )
   )
