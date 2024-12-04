@@ -3,7 +3,7 @@
 - Day1: Historian Hysteria
 - Day2: Red-Nosed Reports
 - Day3: Mull It Over
-- Day4: ???
+- Day4: Ceres Search
 - Day5: ???
 - Day6: ???
 - Day7: ???
