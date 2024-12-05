@@ -18,7 +18,7 @@ object DayGenerator {
     |        throw new UnsupportedOperationException("part2");
     |    }
     |
-    |    public static void main(String[] args) {
+    |    public static void main() {
     |        var day$day = new Day$day();
     |        var data = IO.getResourceAsList("aoc2024/day$day.txt");
     |        var part1 = day$day.part1(data);

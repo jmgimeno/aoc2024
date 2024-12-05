@@ -13,7 +13,7 @@ class Rules {
         var parts = line.split("\\|");
         var before = Integer.parseInt(parts[0]);
         var after = Integer.parseInt(parts[1]);
-        this.afters.computeIfAbsent(before, k -> new HashSet<>()).add(after);
+        this.afters.computeIfAbsent(before, _ -> new HashSet<>()).add(after);
     }
 
     long part1(Updates update) {
@@ -24,13 +24,13 @@ class Rules {
     }
 
     private boolean countValid(Update update) {
-        for (int i = 0; i < update.pages.size() - 1; i++) {
-            var validAfters = this.afters.get(update.pages.get(i));
+        for (int i = 0; i < update.pages().size() - 1; i++) {
+            var validAfters = this.afters.get(update.pages().get(i));
             if (validAfters == null) {
                 return false;
             }
-            for (int j = i + 1; j < update.pages.size(); j++) {
-                if (!validAfters.contains(update.pages.get(j))) {
+            for (int j = i + 1; j < update.pages().size(); j++) {
+                if (!validAfters.contains(update.pages().get(j))) {
                     return false;
                 }
             }
@@ -60,14 +60,11 @@ class Rules {
     }
 }
 
-class Update {
-    final List<Integer> pages;
-
-    Update(List<Integer> pages) {
+record Update(List<Integer> pages) {
+    Update {
         if (pages.size() % 2 != 1) {
             throw new IllegalArgumentException("Expected odd pages, got " + pages.size());
         }
-        this.pages = pages;
     }
 
     static Update parse(String line) {
@@ -98,8 +95,8 @@ class Updates {
 
 }
 
-record ParseResult(Rules rules, Updates updates) {
-    static ParseResult parse(List<String> data) {
+record ParsedInput(Rules rules, Updates updates) {
+    static ParsedInput parse(List<String> data) {
         var rules = new Rules();
         var updates = new Updates();
         for (var line : data) {
@@ -112,23 +109,23 @@ record ParseResult(Rules rules, Updates updates) {
                 updates.parseAndAdd(line);
             }
         }
-        return new ParseResult(rules, updates);
+        return new ParsedInput(rules, updates);
     }
 }
 
 public class Day5 {
 
     long part1(List<String> data) {
-        var parsed = ParseResult.parse(data);
+        var parsed = ParsedInput.parse(data);
         return parsed.rules().part1(parsed.updates());
     }
 
     long part2(List<String> data) {
-        var parsed = ParseResult.parse(data);
+        var parsed = ParsedInput.parse(data);
         return parsed.rules().part2(parsed.updates());
     }
 
-    public static void main(String[] args) {
+    public static void main() {
         var day5 = new Day5();
         var data = IO.getResourceAsList("aoc2024/day5.txt");
         var part1 = day5.part1(data);
