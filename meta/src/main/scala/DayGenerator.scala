@@ -23,8 +23,8 @@ object DayGenerator {
     |        var data = IO.getResourceAsList("aoc2024/day$day.txt");
     |        var part1 = day$day.part1(data);
     |        System.out.println("part1 = " + part1);
-    |//        var part2 = day$day.part2(data);
-    |//        System.out.println("part2 = " + part2);
+    |        var part2 = day$day.part2(data);
+    |        System.out.println("part2 = " + part2);
     |    }
     |}""".stripMargin
 
@@ -33,7 +33,6 @@ object DayGenerator {
     |
     |import utils.IO;
     |
-    |import org.junit.jupiter.api.Disabled;
     |import org.junit.jupiter.api.DisplayName;
     |import org.junit.jupiter.api.Test;
     |
@@ -49,7 +48,6 @@ object DayGenerator {
     |
     |    @Test
     |    @DisplayName("part1 - example data")
-    |    @Disabled("part1 - not implemented")
     |    void test1() {
     |        var data = IO.splitLinesAsList(example);
     |        assertEquals(-1L, day$day.part1(data));
@@ -57,7 +55,6 @@ object DayGenerator {
     |
     |    @Test
     |    @DisplayName("part1 - input data")
-    |    @Disabled("part1 - not implemented")
     |    void test2() {
     |        var data = IO.getResourceAsList("aoc2024/day$day.txt");
     |        assertEquals(-1L, day$day.part1(data));
@@ -65,7 +62,6 @@ object DayGenerator {
     |
     |    @Test
     |    @DisplayName("part2 - example data")
-    |    @Disabled("part2 - not implemented")
     |    void test3() {
     |        var data = IO.splitLinesAsList(example);
     |        assertEquals(-1L, day$day.part2(data));
@@ -73,7 +69,6 @@ object DayGenerator {
     |
     |    @Test
     |    @DisplayName("part2 - input data")
-    |    @Disabled("part2 - not implemented")
     |    void test4() {
     |        var data = IO.getResourceAsList("aoc2024/day$day.txt");
     |        assertEquals(-1L, day$day.part2(data));
@@ -125,8 +120,7 @@ object DayGenerator {
     |
     |class Day${day}Suite extends FunSuite {
     |
-    |  val example = \"\"\"
-    |  \"\"\"
+    |  val example: String = \"\"\"\"\"\".stripMargin
     |
     |  test("part1 - example data") {
     |    val data = IO.splitLinesAsList(example).asScala.toList

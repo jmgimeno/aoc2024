@@ -18,12 +18,12 @@ class Rules {
 
     long part1(Updates update) {
         return update.updates.stream()
-                .filter(this::countValid)
+                .filter(this::isValid)
                 .mapToLong(Update::middle)
                 .sum();
     }
 
-    private boolean countValid(Update update) {
+    private boolean isValid(Update update) {
         for (int i = 0; i < update.pages().size() - 1; i++) {
             var validAfters = this.afters.get(update.pages().get(i));
             if (validAfters == null) {
@@ -43,8 +43,7 @@ class Rules {
             if (i.equals(j)) {
                 return 0;
             }
-            var aftersOfI = this.afters.getOrDefault(i, Set.of());
-            if (aftersOfI.contains(j)) {
+            if (this.afters.getOrDefault(i, Set.of()).contains(j)) {
                 return -1;
             }
             return 1;
@@ -53,7 +52,7 @@ class Rules {
 
     long part2(Updates update) {
         return update.updates.stream()
-                .filter(Predicate.not(this::countValid))
+                .filter(Predicate.not(this::isValid))
                 .map(u -> Update.sort(u, this.comparator()))
                 .mapToLong(Update::middle)
                 .sum();
