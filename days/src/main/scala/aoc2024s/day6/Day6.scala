@@ -68,27 +68,6 @@ object Day6 {
     case Loop
   }
 
-  def walkImmutable(plan: Plan, guard: Guard, obstacle: Option[Position] = Option.empty): ExitStatus = {
-
-    case class State(guard: Guard, steps: Set[Guard], obstacle: Option[Position]) {
-      def step: State = copy(guard = guard.step, steps = steps + guard)
-
-      def turnRight: State = copy(guard = guard.turnRight, steps = steps + guard)
-    }
-
-    @annotation.tailrec
-    def go(current: State): State =
-      if current.steps.contains(current.guard) then current // we are in a loop */
-      else if !plan.inside(current.guard.infront) then current.copy(steps = current.steps + current.guard) // we exit the plan
-      else if current.obstacle.contains(current.guard.infront) || plan(current.guard.infront) == '#' then go(current.turnRight)
-      else go(current.step)
-
-    val initialState = State(guard, Set.empty[Guard], obstacle)
-    val finalState = go(initialState)
-    if !plan.inside(finalState.guard.infront) then ExitStatus.Outside(finalState.steps.map(_.at).toVector)
-    else ExitStatus.Loop
-  }
-
   def walk(plan: Plan, guard: Guard, obstacle: Option[Position] = Option.empty): ExitStatus = {
     var current = guard
     val steps = collection.mutable.Set.empty[Guard]
@@ -109,15 +88,6 @@ object Day6 {
     }
   }
 
-  def part2(data: List[String]): Long = {
-    val (plan, guard) = parse(data)
-    walk(plan, guard) match {
-      case ExitStatus.Outside(steps) =>
-        parallelCount(plan, guard, steps)
-      case ExitStatus.Loop => sys.error("No loops in original map")
-    }
-  }
-
   private def sequentialCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
     steps.count { position =>
       walk(plan, guard, Some(position)) == ExitStatus.Loop
@@ -134,6 +104,15 @@ object Day6 {
       }
     }
     futures.map(future => Await.result(future, duration.Duration.Inf)).sum
+  }
+
+  def part2(data: List[String]): Long = {
+    val (plan, guard) = parse(data)
+    walk(plan, guard) match {
+      case ExitStatus.Outside(steps) =>
+        parallelCount(plan, guard, steps)
+      case ExitStatus.Loop => sys.error("No loops in original map")
+    }
   }
 
   @main def main6(): Unit = {
