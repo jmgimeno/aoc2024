@@ -166,6 +166,7 @@ public class Day6 {
     long part2(List<String> data) {
         var parsed = parse(data);
         var steps = initialWalk(parsed.plan, parsed.guard);
+        steps.remove(parsed.guard.at); // remove the guard's starting position
         return parallelCount(parsed.plan, parsed.guard, new ArrayList<>(steps));
     }
 
