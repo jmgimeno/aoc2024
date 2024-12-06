@@ -3,6 +3,7 @@ package aoc2024s.day6;
 
 import utils.IO
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.jdk.CollectionConverters.*
 
 case class Position(x: Int, y: Int)
@@ -98,14 +99,37 @@ object Day6 {
     val (plan, guard) = parse(data)
     walk(plan, guard) match {
       case ExitStatus.Outside(steps) =>
-        (steps - guard.at).count { position =>
-          walk(plan, guard, Some(position)) match {
-            case ExitStatus.Outside(_) => false
-            case ExitStatus.Loop => true
-          }
-        }
+        parallelCount(plan, guard, steps - guard.at)
       case ExitStatus.Loop => sys.error("No loops in original map")
     }
+  }
+
+  private def sequentialCount(plan: Plan, guard: Guard, steps: Set[Position]) = {
+    steps.count { position =>
+      walk(plan, guard, Some(position)) match {
+        case ExitStatus.Outside(_) => false
+        case ExitStatus.Loop => true
+      }
+    }
+  }
+
+  private def parallelCount(plan: Plan, guard: Guard, steps: Set[Position]) = {
+    val numThreads = Runtime.getRuntime.availableProcessors
+    val chunkSize = steps.size / numThreads
+    val chunks = steps.grouped(chunkSize).toList
+    val result: AtomicLong = new AtomicLong(0L)
+    val threads = chunks.map { chunk =>
+      val thread = new Thread {
+        override def run(): Unit = {
+          val counter = sequentialCount(plan, guard, chunk)
+          result.accumulateAndGet(counter, _ + _)
+        }
+      }
+      thread.start()
+      thread
+    }
+    threads.foreach(_.join())
+    result.get
   }
 
   @main def main6(): Unit = {
