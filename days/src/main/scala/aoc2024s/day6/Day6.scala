@@ -98,7 +98,7 @@ object Day6 {
   }
 
   private def parallelCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
-    val numThreads = 8 // manually adjusted
+    val numThreads = math.min(8, Runtime.getRuntime.availableProcessors()) // manually adjusted
     val pool = Executors.newFixedThreadPool(numThreads)
     given ec: ExecutionContext = ExecutionContext.fromExecutor(pool)
     val chunkSize = steps.size / numThreads
