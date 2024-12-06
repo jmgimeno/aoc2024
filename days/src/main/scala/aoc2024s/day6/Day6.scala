@@ -64,11 +64,11 @@ def find(lines: List[String], c: Char): Position = {
 object Day6 {
 
   enum ExitStatus {
-    case Outside(steps: Set[Position])
+    case Outside(steps: Vector[Position])
     case Loop
   }
 
-  def walk(plan: Plan, guard: Guard, obstacle: Option[Position] = Option.empty): ExitStatus = {
+  def walkImmutable(plan: Plan, guard: Guard, obstacle: Option[Position] = Option.empty): ExitStatus = {
 
     case class State(guard: Guard, steps: Set[Guard], obstacle: Option[Position]) {
       def step: State = copy(guard = guard.step, steps = steps + guard)
@@ -85,8 +85,20 @@ object Day6 {
 
     val initialState = State(guard, Set.empty[Guard], obstacle)
     val finalState = go(initialState)
-    if !plan.inside(finalState.guard.infront) then ExitStatus.Outside(finalState.steps.map(_.at))
+    if !plan.inside(finalState.guard.infront) then ExitStatus.Outside(finalState.steps.map(_.at).toVector)
     else ExitStatus.Loop
+  }
+
+  def walk(plan: Plan, guard: Guard, obstacle: Option[Position] = Option.empty): ExitStatus = {
+    var current = guard
+    val steps = collection.mutable.Set.empty[Guard]
+    while true do
+      if steps.contains(current) then return ExitStatus.Loop
+      steps.add(current)
+      if !plan.inside(current.infront) then return ExitStatus.Outside(steps.map(_.at).toVector)
+      else if obstacle.contains(current.infront) || plan(current.infront) == '#' then current = current.turnRight
+      else current = current.step
+    sys.error("Unreachable code")
   }
 
   def part1(data: List[String]): Long = {
@@ -101,21 +113,18 @@ object Day6 {
     val (plan, guard) = parse(data)
     walk(plan, guard) match {
       case ExitStatus.Outside(steps) =>
-        parallelCount(plan, guard, steps - guard.at)
+        parallelCount(plan, guard, steps)
       case ExitStatus.Loop => sys.error("No loops in original map")
     }
   }
 
-  private def sequentialCount(plan: Plan, guard: Guard, steps: Set[Position]) = {
+  private def sequentialCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
     steps.count { position =>
-      walk(plan, guard, Some(position)) match {
-        case ExitStatus.Outside(_) => false
-        case ExitStatus.Loop => true
-      }
+      walk(plan, guard, Some(position)) == ExitStatus.Loop
     }
   }
 
-  private def parallelCount(plan: Plan, guard: Guard, steps: Set[Position]) = {
+  private def parallelCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
     val numThreads = Runtime.getRuntime.availableProcessors
     val chunkSize = steps.size / numThreads
     val chunks = steps.grouped(chunkSize).toList
