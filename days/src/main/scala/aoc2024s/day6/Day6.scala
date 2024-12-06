@@ -26,25 +26,23 @@ enum Direction(val dx: Int, val dy: Int) {
 }
 
 class Plan(lines: List[String]) {
-  val plan: Vector[String] = lines.toVector
-  val height: Int = plan.size
+  val plan: Array[String] = lines.toArray
+  val height: Int = plan.length
   val width: Int = plan.head.length
 
-  def apply(x: Int)(y: Int): Char = plan(y)(x)
-
-  def apply(position: Position): Char = this (position.x)(position.y)
+  def apply(position: Position): Char = plan(position.y)(position.x)
 
   def inside(position: Position): Boolean = {
     position.x >= 0 && position.x < width && position.y >= 0 && position.y < height
   }
 
-  def infront(guard: Guard): Char = apply(guard.infront)
+  def inFrontOf(guard: Guard): Char = this(guard.inFrontOf)
 }
 
 case class Guard(at: Position, facing: Direction) {
-  def infront: Position = facing(at)
+  def inFrontOf: Position = facing(at)
 
-  def step: Guard = copy(at = infront)
+  def step: Guard = copy(at = inFrontOf)
 
   def turnRight: Guard = copy(facing = facing.turnRight)
 }
@@ -68,14 +66,15 @@ object Day6 {
     case Loop
   }
 
-  def walk(plan: Plan, guard: Guard, obstacle: Option[Position] = Option.empty): ExitStatus = {
+  def walk(plan: Plan, guard: Guard, obstacle: Position = null): ExitStatus = {
     var current = guard
     val steps = collection.mutable.Set.empty[Guard]
     while true do
       if steps.contains(current) then return ExitStatus.Loop
       steps.add(current)
-      if !plan.inside(current.infront) then return ExitStatus.Outside(steps.map(_.at).toVector)
-      else if obstacle.contains(current.infront) || plan(current.infront) == '#' then current = current.turnRight
+      val inFrontOf = current.inFrontOf
+      if !plan.inside(inFrontOf) then return ExitStatus.Outside(steps.map(_.at).toVector)
+      else if plan(inFrontOf) == '#' || inFrontOf == obstacle then current = current.turnRight
       else current = current.step
     sys.error("Unreachable code")
   }
@@ -90,7 +89,7 @@ object Day6 {
 
   private def sequentialCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
     steps.count { position =>
-      walk(plan, guard, Some(position)) == ExitStatus.Loop
+      walk(plan, guard, position) == ExitStatus.Loop
     }
   }
 
