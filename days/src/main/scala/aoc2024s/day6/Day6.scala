@@ -101,7 +101,7 @@ object Day6 {
     val numThreads = math.min(8, Runtime.getRuntime.availableProcessors()) // manually adjusted
     val pool = Executors.newFixedThreadPool(numThreads)
     given ec: ExecutionContext = ExecutionContext.fromExecutor(pool)
-    val chunkSize = steps.size / numThreads
+    val chunkSize = steps.size / numThreads + 1
     val chunks = steps.grouped(chunkSize).toList // w/o it the execution time doubles
     val futures = chunks.map { chunk =>
       Future {

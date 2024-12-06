@@ -144,7 +144,7 @@ public class Day6 {
 
     private long parallelCount(Plan plan, Guard guard, List<Position> obstacles) {
         var numThreads = Math.min(6, Runtime.getRuntime().availableProcessors()); // manually adjusted
-        var chunkSize = obstacles.size() / numThreads;
+        var chunkSize = obstacles.size() / numThreads + 1;
         var chunks = partition(obstacles, chunkSize);
         var latch = new java.util.concurrent.CountDownLatch(chunks.size());
         var result = new AtomicLong(0L);
