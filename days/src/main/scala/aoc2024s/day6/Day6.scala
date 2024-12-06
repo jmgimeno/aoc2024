@@ -3,9 +3,8 @@ package aoc2024s.day6;
 
 import utils.IO
 
-import scala.collection.mutable
+import java.util.concurrent.Executors
 import scala.concurrent.*
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.jdk.CollectionConverters.*
 
 case class Position(x: Int, y: Int)
@@ -62,32 +61,29 @@ def find(lines: List[String], c: Char): Position = {
 
 object Day6 {
 
-  def initialWalk(plan: Plan, guard: Guard): mutable.Set[Position] = {
-    // no need to detect loops, just walk until we go out of bounds
-    var current = guard
-    val steps = mutable.Set.empty[Position]
-    while true do
-      steps.add(current.at)
-      if !plan.inside(current.inFrontOf) then return steps
-      else if plan(current.inFrontOf) == '#' then current = current.turnRight
-      else current = current.step
-    sys.error("Unreachable code")
+  def initialWalk(plan: Plan, guard: Guard): Set[Position] = {
+    @annotation.tailrec
+    def go(current: Guard, steps: Set[Position]): Set[Position] = {
+      val newSteps = steps + current.at
+      if !plan.inside(current.inFrontOf) then newSteps
+      else if plan(current.inFrontOf) == '#' then go(current.turnRight, newSteps)
+      else go(current.step, newSteps)
+    }
+
+    go(guard, Set.empty)
   }
 
   def hasLoop(plan: Plan, guard: Guard, obstacle: Position): Boolean = {
     // In the second one, we only need to the guards that have encountered and obstacle
-    var current = guard
-    val obstacles = collection.mutable.Set.empty[Guard]
-    while true do
-      if obstacles.contains(current) then return true
-      val inFrontOf = current.inFrontOf
-      if !plan.inside(inFrontOf) then return false
-      else if plan(inFrontOf) == '#' || inFrontOf == obstacle then {
-        obstacles.add(current)
-        current = current.turnRight
-      }
-      else current = current.step
-    sys.error("Unreachable code")
+    @annotation.tailrec
+    def go(current: Guard, obstacles: Set[Guard]): Boolean = {
+      if obstacles.contains(current) then true
+      else if !plan.inside(current.inFrontOf) then false
+      else if plan(current.inFrontOf) == '#' || current.inFrontOf == obstacle then go(current.turnRight, obstacles + current)
+      else go(current.step, obstacles)
+    }
+
+    go(guard, Set.empty)
   }
 
   def part1(data: List[String]): Long = {
@@ -95,14 +91,16 @@ object Day6 {
     initialWalk(plan, guard).size
   }
 
-  private def sequentialCount(plan: Plan, guard: Guard, steps: mutable.Set[Position]) = {
+  private def sequentialCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
     steps.count {
       hasLoop(plan, guard, _)
     }
   }
 
-  private def parallelCount(plan: Plan, guard: Guard, steps: mutable.Set[Position]) = {
-    val numThreads = Runtime.getRuntime.availableProcessors
+  private def parallelCount(plan: Plan, guard: Guard, steps: Vector[Position]) = {
+    val numThreads = 8 // manually adjusted
+    val pool = Executors.newFixedThreadPool(numThreads)
+    given ec: ExecutionContext = ExecutionContext.fromExecutor(pool)
     val chunkSize = steps.size / numThreads
     val chunks = steps.grouped(chunkSize).toList // w/o it the execution time doubles
     val futures = chunks.map { chunk =>
@@ -115,8 +113,8 @@ object Day6 {
 
   def part2(data: List[String]): Long = {
     val (plan, guard) = parse(data)
-    val steps = initialWalk(plan, guard)
-    parallelCount(plan, guard, steps)
+    val steps = initialWalk(plan, guard) // remove the starting point
+    parallelCount(plan, guard, (steps - guard.at).toVector)
   }
 
   @main def main6(): Unit = {
