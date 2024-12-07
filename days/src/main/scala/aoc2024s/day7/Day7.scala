@@ -52,8 +52,14 @@ object Day7 {
 
     def generateAndTest(target: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
 
-      def concatLong(a: Long, b: Long): Long =
-        a * math.pow(10, math.log10(b).toInt + 1).toLong + b
+      def concatLong(a:Long, b:Long): Long = {
+        @tailrec
+        def go(acc: Long, n: Long): Long = {
+          if (n == 0) acc
+          else go(acc * 10, n / 10)
+        }
+        go(a * 10 , b / 10) + b
+      }
 
       @tailrec
       def go(acc: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
