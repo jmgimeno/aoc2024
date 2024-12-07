@@ -45,9 +45,10 @@ public class Day7 {
                 cache.add(result);
                 return result;
             } else {
-                var result = get(n - 1).stream()
+                var parents = get(n - 1);
+                var result = parents.stream()
                         .flatMap(parent -> list.stream().map(head -> new Node<>(head, parent)))
-                        .toList();
+                        .collect(Collectors.toCollection(()-> new ArrayList<>(list.size() * parents.size())));
                 cache.add(result);
                 return result;
             }
