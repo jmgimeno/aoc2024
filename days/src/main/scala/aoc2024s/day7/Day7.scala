@@ -48,9 +48,13 @@ object Day7 {
     }
   }
 
-  object Combinator {
+  object Generator {
 
-    def combineAndMatch(target: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
+    def generateAndTest(target: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
+
+      def concatLong(a: Long, b: Long): Long =
+        a * math.pow(10, math.log10(b).toInt + 1).toLong + b
+
       @tailrec
       def go(acc: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
         if (acc > target) false
@@ -60,7 +64,7 @@ object Day7 {
             case head :: tail => ops match {
               case Add :: rest => go(acc + head, tail, rest)
               case Multiply :: rest => go(acc * head, tail, rest)
-              case Concatenate :: rest => go((acc.toString ++ head.toString).toLong, tail, rest)
+              case Concatenate :: rest => go(concatLong(acc, head), tail, rest)
               case _ => sys.error("Invalid expression")
             }
           }
@@ -71,7 +75,7 @@ object Day7 {
 
     def canBeTrue(cachedCombinator: CachedCombinator[Operation])(equation: Equation): Boolean = {
       val ops = cachedCombinator(equation.numbers.size - 1)
-      ops.exists(combineAndMatch(equation.target, equation.numbers, _))
+      ops.exists(generateAndTest(equation.target, equation.numbers, _))
     }
   }
 
@@ -79,7 +83,7 @@ object Day7 {
     val combinator = CachedCombinator(List(Add, Multiply))
     data
       .map(Equation(_))
-      .filter(Combinator.canBeTrue(combinator))
+      .filter(Generator.canBeTrue(combinator))
       .map(_.target)
       .sum
   }
@@ -88,7 +92,7 @@ object Day7 {
     val combinator = CachedCombinator(List(Add, Multiply, Concatenate))
     data
       .map(Equation(_))
-      .filter(Combinator.canBeTrue(combinator))
+      .filter(Generator.canBeTrue(combinator))
       .map(_.target)
       .sum
   }

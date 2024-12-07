@@ -1,11 +1,10 @@
 
 package aoc2024s.day7
 
-import aoc2024s.day7.Day7.{Combinator, Equation}
+import munit.FunSuite
 import utils.IO
 
 import scala.jdk.CollectionConverters.*
-import munit.FunSuite
 
 class Day7Suite extends FunSuite {
 
