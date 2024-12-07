@@ -4,106 +4,91 @@ package aoc2024s.day7;
 import utils.IO
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object Day7 {
 
   enum Operation {
-    case Value(value: Long)
     case Add, Multiply, Concatenate
   }
 
   import Operation.*
 
-  case class Equation(target: Long, numbers: List[Operation])
+  case class Equation(target: Long, numbers: List[Long])
 
   object Equation {
 
     def apply(line: String): Equation = {
       val parts = line.split(": ");
       val target = parts(0).toLong;
-      val numbers = parts(1).split(" ").map(n => Value(n.toLong)).toList;
+      val numbers = parts(1).split(" ").map(n => n.toLong).toList;
       Equation(target, numbers);
     }
   }
 
-  extension [A](list: List[A])
-    def sequences(size: Int): LazyList[List[A]] = {
-      if (size == 0) LazyList(List.empty)
+  case class CachedCombinator[A](list: List[A]) {
+
+    val cache: mutable.Map[Int, List[List[A]]] = mutable.Map.empty
+
+    def apply(size: Int): List[List[A]] = {
+      cache.getOrElse(size, {
+        val result = generateSequence(size)
+        cache.update(size, result)
+        result
+      })
+    }
+
+    def generateSequence(size: Int): List[List[A]] = {
+      if (size == 0) List(List.empty)
       else {
-        val rest = sequences(size - 1)
-        list.to(LazyList).flatMap { x => rest.map(x :: _) }
-      }
-    }
-    def zipAppend(other: List[A]): List[A] = {
-      (list, other) match
-        case (Nil, _) => Nil
-        case (x :: xs, y :: ys) => x :: y :: xs.zipAppend(ys)
-        case _ => sys.error("Lists must have the same length")
-    }
-
-  object Combinator {
-
-    def combine(numbers: List[Operation], ops: LazyList[List[Operation]]): LazyList[List[Operation]] = {
-      ops match {
-        case LazyList() => LazyList()
-        case head #:: tail => {
-          val combined = numbers.head :: head.zipAppend(numbers.tail)
-          combined #:: combine(numbers, tail)
-        }
-      }
-    }
-
-    def canBeTrue1(equation: Equation): Boolean = {
-      val intermediateOps = List(Add, Multiply).sequences(equation.numbers.size - 1)
-      val possibleExpressions = combine(equation.numbers, intermediateOps)
-      possibleExpressions.exists { expression =>
-        evaluatesTo(expression, equation.target)
-      }
-    }
-
-    def canBeTrue2(equation: Equation): Boolean = {
-      // if (canBeTrue1(equation)) return true
-      val intermediateOps = List(Add, Multiply, Concatenate).sequences(equation.numbers.size - 1)
-      val possibleExpressions = combine(equation.numbers, intermediateOps)
-      possibleExpressions.exists { expression =>
-        evaluatesTo(expression, equation.target)
-      }
-    }
-
-    def evaluatesTo(expression: List[Operation], target: Long): Boolean = {
-      @tailrec
-      def go(acc: Long, ops: List[Operation], numbers: List[Operation]): Boolean = {
-        if (acc > target) false
-        else
-          numbers match {
-            case Nil => acc == target
-            case Add :: Value(value) :: tail => go(acc + value, ops, tail)
-            case Multiply :: Value(value) :: tail => go(acc * value, ops, tail)
-            case Concatenate :: Value(value) :: tail => go((acc.toString ++ value.toString).toLong, ops, tail)
-            case _ => sys.error("Invalid expression")
-          }
-      }
-
-      expression.head match {
-        case Value(value) => go(value, Nil, expression.tail)
-        case _ => sys.error("Invalid expression")
+        val rest = generateSequence(size - 1)
+        rest.flatMap { tail => list.map(_ :: tail) }
       }
     }
   }
 
+  object Combinator {
+
+    def combineAndMatch(target: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
+      @tailrec
+      def go(acc: Long, numbers: List[Long], ops: List[Operation]): Boolean = {
+        if (acc > target) false
+        else
+          numbers match {
+            case Nil => acc == target
+            case head :: tail => ops match {
+              case Add :: rest => go(acc + head, tail, rest)
+              case Multiply :: rest => go(acc * head, tail, rest)
+              case Concatenate :: rest => go((acc.toString ++ head.toString).toLong, tail, rest)
+              case _ => sys.error("Invalid expression")
+            }
+          }
+      }
+
+      go(numbers.head, numbers.tail, ops)
+    }
+
+    def canBeTrue(cachedCombinator: CachedCombinator[Operation])(equation: Equation): Boolean = {
+      val ops = cachedCombinator(equation.numbers.size - 1)
+      ops.exists(combineAndMatch(equation.target, equation.numbers, _))
+    }
+  }
+
   def part1(data: List[String]): Long = {
+    val combinator = CachedCombinator(List(Add, Multiply))
     data
       .map(Equation(_))
-      .filter(Combinator.canBeTrue1)
+      .filter(Combinator.canBeTrue(combinator))
       .map(_.target)
       .sum
   }
 
   def part2(data: List[String]): Long = {
+    val combinator = CachedCombinator(List(Add, Multiply, Concatenate))
     data
       .map(Equation(_))
-      .filter(Combinator.canBeTrue2)
+      .filter(Combinator.canBeTrue(combinator))
       .map(_.target)
       .sum
   }
