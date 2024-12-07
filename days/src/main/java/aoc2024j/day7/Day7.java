@@ -28,11 +28,11 @@ public class Day7 {
     record Node<A>(A value, Node<A> next) {
     }
 
-    static class CachedCombinator2<A> {
+    static class CachedCombinator<A> {
         final ArrayList<List<Node<A>>> cache = new ArrayList<>();
         final List<A> list;
 
-        CachedCombinator2(List<A> list) {
+        CachedCombinator(List<A> list) {
             this.list = list;
         }
 
@@ -45,8 +45,7 @@ public class Day7 {
                 cache.add(result);
                 return result;
             } else {
-                List<Node<A>> parents = get(n - 1);
-                var result = parents.stream()
+                var result = get(n - 1).stream()
                         .flatMap(parent -> list.stream().map(head -> new Node<>(head, parent)))
                         .toList();
                 cache.add(result);
@@ -67,7 +66,7 @@ public class Day7 {
             return acc + b;
         }
 
-        static boolean generateAndTest2(long target, ArrayList<Long> numbers, Node<Operation> ops) {
+        static boolean generateAndTest(long target, ArrayList<Long> numbers, Node<Operation> ops) {
             int i = 0;
             var acc = numbers.get(i++);
             while (acc <= target && ops != null) {
@@ -86,16 +85,16 @@ public class Day7 {
             return acc == target;
         }
 
-        static boolean canBeTrue(CachedCombinator2<Operation> cachedCombinator, Equation equation) {
+        static boolean canBeTrue(CachedCombinator<Operation> cachedCombinator, Equation equation) {
             var ops = cachedCombinator.get(equation.numbers.size() - 1);
             return ops.stream()
                     .anyMatch(op ->
-                            generateAndTest2(equation.target, equation.numbers, op));
+                            generateAndTest(equation.target, equation.numbers, op));
         }
     }
 
     long part1(List<String> data) {
-        var combinator = new CachedCombinator2<>(List.of(Operation.Add, Operation.Multiply));
+        var combinator = new CachedCombinator<>(List.of(Operation.Add, Operation.Multiply));
         return data.stream()
                 .map(Equation::parse)
                 .filter(equation -> Generator.canBeTrue(combinator, equation))
@@ -104,7 +103,7 @@ public class Day7 {
     }
 
     long part2(List<String> data) {
-        var combinator = new CachedCombinator2<>(List.of(Operation.Add, Operation.Multiply,
+        var combinator = new CachedCombinator<>(List.of(Operation.Add, Operation.Multiply,
                 Operation.Concatenate));
         return data.stream()
                 .map(Equation::parse)
