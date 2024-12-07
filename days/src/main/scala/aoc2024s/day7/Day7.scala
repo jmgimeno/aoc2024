@@ -36,8 +36,10 @@ object Day7 {
       }
     }
     def zipAppend(other: List[A]): List[A] = {
-      assert(list.size == other.size)
-      list.zip(other).flatMap { case (a, b) => List(a, b) }
+      (list, other) match
+        case (Nil, _) => Nil
+        case (x :: xs, y :: ys) => x :: y :: xs.zipAppend(ys)
+        case _ => sys.error("Lists must have the same length")
     }
 
   object Combinator {
@@ -46,7 +48,7 @@ object Day7 {
       ops match {
         case LazyList() => LazyList()
         case head #:: tail => {
-          val combined = numbers.head :: head.zip(numbers.tail).flatMap { case (op, num) => List(op, num) }
+          val combined = numbers.head :: head.zipAppend(numbers.tail)
           combined #:: combine(numbers, tail)
         }
       }
