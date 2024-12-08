@@ -106,8 +106,8 @@ object DayGenerator {
     |      val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList;
     |      val part1 = Day$day.part1(data);
     |      println(s"part1 = $$part1");
-    |//        val part2 = Day$day.part2(data);
-    |//        println(s"part2 = $$part2");
+    |      val part2 = Day$day.part2(data);
+    |      println(s"part2 = $$part2");
     |    }
     |}""".stripMargin
 

@@ -5,9 +5,9 @@
 - Day3: Mull It Over
 - Day4: Ceres Search
 - Day5: Print Queue
-- Day6: ???
-- Day7: ???
-- Day8: ???
+- Day6: Guard Gallivant
+- Day7: Bridge Repair
+- Day8: Resonant Collinearity
 - Day9: ???
 - Day10: ??? 
 - Day11: ???
