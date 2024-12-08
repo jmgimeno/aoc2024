@@ -1,17 +1,19 @@
 
 package aoc2024s.day8;
 
-import utils.IO;
+import utils.IO
+
+import scala.annotation.targetName
 import scala.jdk.CollectionConverters.*
 
 object Day8 {
 
   case class Position(x: Int, y: Int) {
-    def -(other: Position): Position = Position(x - other.x, y - other.y)
+    @targetName("sub") def -(other: Position): Position = Position(x - other.x, y - other.y)
 
-    def +(other: Position): Position = Position(x + other.x, y + other.y)
+    @targetName("add") def +(other: Position): Position = Position(x + other.x, y + other.y)
 
-    def *(factor: Int): Position = Position(x * factor, y * factor)
+    @targetName("mul") def *(factor: Int): Position = Position(x * factor, y * factor)
 
     def antinodes(factor: Int)(p1: Position, p2: Position): List[Position] = {
       val delta = p1 - p2
@@ -24,38 +26,27 @@ object Day8 {
       position.x >= 0 && position.x < width && position.y >= 0 && position.y < height
     }
 
-    def antinodesForPart1(c: Char): Set[Position] = {
-      val positions = antennas(c)
-      positions.flatMap { p1 =>
-        positions.flatMap { p2 =>
-          if (p1 != p2) p1.antinodes(1)(p1, p2).filter(isInside) else Nil
+    def antinodes(hops: Int): Set[Position] = {
+      antennas.flatMap { case (_, positions) =>
+        positions.flatMap { p1 =>
+          positions.flatMap { p2 =>
+            if (p1 != p2) p1.antinodes(hops)(p1, p2).filter(isInside) else Nil
+          }
         }
       }.toSet
     }
 
-    def allAntinodes(antinodes: Char => Set[Position]): Set[Position] =
-      antennas.keys.foldLeft(Set.empty[Position]) { (acc, c) =>
-        acc ++ antinodes(c)
-      }
-
-    def antinodesForPart2(c: Char): Set[Position] = {
-      val positions = antennas(c)
-      positions.flatMap { p1 =>
-        positions.flatMap { p2 =>
-          if (p1 != p2)
-            LazyList.from(0)
-              .map(p1.antinodes(_)(p1, p2))
-              .takeWhile(_.exists(isInside))
-              .flatten
-              .filter(isInside)
-          else Nil
-        }
-      }.toSet
+    def antinodesForPart2: Set[Position] = {
+      LazyList.from(0)
+        .map(antinodes)
+        .takeWhile(_.nonEmpty)
+        .flatten
+        .toSet
     }
 
-    def part1: Long = allAntinodes(antinodesForPart1).size
+    def part1: Long = antinodes(1).size
 
-    def part2: Long = allAntinodes(antinodesForPart2).size
+    def part2: Long = antinodesForPart2.size
   }
 
   object Antennas {
