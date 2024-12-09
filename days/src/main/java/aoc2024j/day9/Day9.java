@@ -4,6 +4,7 @@ package aoc2024j.day9;
 import utils.IO;
 
 import java.util.*;
+import java.util.function.IntConsumer;
 
 public class Day9 {
 
@@ -33,37 +34,30 @@ public class Day9 {
                 }
                 start += size;
             }
-            Collections.reverse(fs.free);
+            Collections.reverse(fs.free); // leftmost block is last
             return fs;
         }
 
-        void compactFileSystemBlocks() {
+        void compactFileSystem(IntConsumer fileCompactor) {
             for (var entry : files.sequencedEntrySet().reversed()) {
                 var id = entry.getKey();
-                if (!free.isEmpty() && free.getLast().start < files.get(id).getFirst().start) {
-                    compactBlocks(id);
+                if (!free.isEmpty()) {
+                    fileCompactor.accept(id);
                 }
             }
         }
 
         private void compactBlocks(Integer id) {
-            // Initially the file is a single block
-            assert files.get(id).size() == 1;
             long fileStart = files.get(id).getFirst().start;
             long fileSize = files.get(id).getFirst().size;
             var newFileBlocks = new ArrayList<Block>();
             while (fileSize > 0 && !free.isEmpty() && free.getLast().start < fileStart) {
                 var freeBlock = free.removeLast();
-                if (fileSize <= freeBlock.size) {
-                    var newFreeBlock = new Block(freeBlock.start + fileSize, freeBlock.size - fileSize);
-                    if (newFreeBlock.size > 0) free.add(newFreeBlock);
-                    var newFileBlock = new Block(freeBlock.start, fileSize);
-                    newFileBlocks.add(newFileBlock);
-                } else {
-                    var newFileBlock = new Block(freeBlock.start, freeBlock.size);
-                    newFileBlocks.add(newFileBlock);
-                }
-                fileSize -= freeBlock.size;
+                var newFreeBlock = new Block(freeBlock.start + fileSize, freeBlock.size - fileSize);
+                if (newFreeBlock.size > 0) free.addLast(newFreeBlock);
+                var newFileBlock = new Block(freeBlock.start, Math.min(fileSize, freeBlock.size));
+                newFileBlocks.add(newFileBlock);
+                fileSize -= newFileBlock.size;
             }
             if (fileSize > 0) {
                 var newFileBlock = new Block(fileStart, fileSize);
@@ -72,18 +66,7 @@ public class Day9 {
             files.put(id, newFileBlocks);
         }
 
-        void compactFileSystemWholeFiles() {
-            for (var entry : files.sequencedEntrySet().reversed()) {
-                var id = entry.getKey();
-                if (!free.isEmpty()) {
-                    compactWholeFiles(id);
-                }
-            }
-        }
-
         private void compactWholeFiles(Integer id) {
-            // Initially the file is a single block
-            assert files.get(id).size() == 1;
             long fileStart = files.get(id).getFirst().start;
             long fileSize = files.get(id).getFirst().size;
             for (int i = free.size() - 1; i >= 0; i--) {
@@ -101,34 +84,23 @@ public class Day9 {
         }
 
         long checksum() {
-            long sum = 0;
-            for (var entry : files.entrySet()) {
-                for (var block : entry.getValue()) {
-                    long checksum = block.checksum();
-                    sum += entry.getKey() * checksum;
-                }
-            }
-            return sum;
-        }
-
-        @Override
-        public String toString() {
-            return "FileSystem{" +
-                    "files=" + files +
-                    ", free=" + free +
-                    '}';
+            return files.entrySet().stream()
+                    .mapToLong(entry ->
+                            entry.getValue().stream()
+                                    .mapToLong(Block::checksum).sum() * entry.getKey())
+                    .sum();
         }
     }
 
     long part1(List<String> data) {
         var fs = FileSystem.fromDense(data.getFirst());
-        fs.compactFileSystemBlocks();
+        fs.compactFileSystem(fs::compactBlocks);
         return fs.checksum();
     }
 
     long part2(List<String> data) {
         var fs = FileSystem.fromDense(data.getFirst());
-        fs.compactFileSystemWholeFiles();
+        fs.compactFileSystem(fs::compactWholeFiles);
         return fs.checksum();
     }
 
