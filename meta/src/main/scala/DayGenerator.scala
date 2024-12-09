@@ -94,21 +94,21 @@ object DayGenerator {
     |
     |object Day$day {
     |
-    |    def part1(data: List[String]): Long = {
-    |      throw new UnsupportedOperationException("part1");
-    |    }
+    |  def part1(data: List[String]): Long = {
+    |    throw new UnsupportedOperationException("part1");
+    |  }
     |
-    |    def part2(data: List[String]): Long = {
-    |      throw new UnsupportedOperationException("part2");
-    |    }
+    |  def part2(data: List[String]): Long = {
+    |    throw new UnsupportedOperationException("part2");
+    |  }
     |
-    |    @main def main$day(): Unit = {
-    |      val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList;
-    |      val part1 = Day$day.part1(data);
-    |      println(s"part1 = $$part1");
-    |      val part2 = Day$day.part2(data);
-    |      println(s"part2 = $$part2");
-    |    }
+    |  @main def main$day(): Unit = {
+    |    val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList;
+    |    val part1 = Day$day.part1(data);
+    |    println(s"part1 = $$part1");
+    |    val part2 = Day$day.part2(data);
+    |    println(s"part2 = $$part2");
+    |  }
     |}""".stripMargin
 
   def scalaTest(day: Int): String = s"""
