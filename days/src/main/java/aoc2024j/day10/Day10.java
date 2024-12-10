@@ -79,38 +79,13 @@ public class Day10 {
                     .filter(this);
         }
 
-        int totalScore1() {
-            return trailHeads().mapToInt(this::score1).sum();
+        Set<Path> trailsFrom(Position trailHead) {
+            var trails = new HashSet<Path>();
+            trails(Path.of(trailHead), trails);
+            return trails;
         }
 
-        int score1(Position position) {
-            var found = new HashSet<Position>();
-            score1(position, found);
-            return found.size();
-        }
-
-        void score1(Position position, Set<Position> found) {
-            int value = get(position);
-            if (value == 9) {
-                found.add(position);
-            } else {
-                expand(position)
-                        .filter(p -> get(p) == value + 1)
-                        .forEach(p -> score1(p, found));
-            }
-        }
-
-        int totalScore2() {
-            return trailHeads().mapToInt(this::score2).sum();
-        }
-
-        int score2(Position position) {
-            var found = new HashSet<Path>();
-            score2(Path.of(position), found);
-            return found.size();
-        }
-
-        void score2(Path path, Set<Path> found) {
+        void trails(Path path, Set<Path> found) {
             var position = path.head();
             int value = get(position);
             if (value == 9) {
@@ -118,17 +93,30 @@ public class Day10 {
             } else {
                 expand(position)
                         .filter(p -> get(p) == value + 1)
-                        .forEach(p -> score2(path.add(p), found));
+                        .forEach(p -> trails(path.add(p), found));
             }
+        }
+
+        long part1() {
+            return trailHeads()
+                    .flatMap(p -> trailsFrom(p).stream().map(Path::head).distinct())
+                    .count();
+        }
+
+        long part2() {
+            return trailHeads()
+                    .map(this::trailsFrom)
+                    .mapToLong(Set::size)
+                    .sum();
         }
     }
 
     long part1(List<String> data) {
-        return new TopographicalMap(data).totalScore1();
+        return new TopographicalMap(data).part1(); //totalScore1();
     }
 
     long part2(List<String> data) {
-        return new TopographicalMap(data).totalScore2();
+        return new TopographicalMap(data).part2(); //totalScore2();
     }
 
     public static void main() {
