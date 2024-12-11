@@ -4,9 +4,7 @@ package aoc2024j.day10;
 import utils.IO;
 import utils.IntGrid;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
@@ -79,35 +77,33 @@ public class Day10 {
                     .filter(this);
         }
 
-        Set<Path> trailsFrom(Position trailHead) {
-            var trails = new HashSet<Path>();
-            trails(Path.of(trailHead), trails);
-            return trails;
+        Stream<Path> trailsFrom(Position trailHead) {
+            return trails(Path.of(trailHead));
         }
 
-        void trails(Path path, Set<Path> found) {
+        Stream<Path> trails(Path path) {
             var position = path.head();
             int value = get(position);
             if (value == 9) {
-                found.add(path);
+                return Stream.of(path);
             } else {
-                expand(position)
+                return expand(position)
                         .filter(p -> get(p) == value + 1)
-                        .forEach(p -> trails(path.add(p), found));
+                        .flatMap(p -> trails(path.add(p)));
             }
         }
 
         long part1() {
             return trailHeads()
-                    .flatMap(p -> trailsFrom(p).stream().map(Path::head).distinct())
+                    .flatMap(p -> trailsFrom(p).map(Path::head).distinct())
                     .count();
         }
 
         long part2() {
             return trailHeads()
-                    .map(this::trailsFrom)
-                    .mapToLong(Set::size)
-                    .sum();
+                    .flatMap(this::trailsFrom)
+                    .distinct()
+                    .count();
         }
     }
 
