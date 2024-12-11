@@ -102,7 +102,6 @@ public class Day10 {
         long part2() {
             return trailHeads()
                     .flatMap(this::trailsFrom)
-                    .distinct()
                     .count();
         }
     }
