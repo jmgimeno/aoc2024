@@ -26,13 +26,14 @@ object Day11 {
     }
 
     private def oneBlink: Stones = {
+      // I put the type annotation in the flatMap to select
+      // the correct overload and get an iterable of tuples
       val newCounters =
-        stones.map { (value, counter) =>
+        stones.flatMap[(Long, Long)] { (value, counter) =>
             blinkValue(value).map {
               _ -> counter
             }
           }
-          .flatten // flatMap != map + flatten !!!
           .groupMapReduce(_._1)(_._2)(_ + _)
 
       Stones(newCounters)
