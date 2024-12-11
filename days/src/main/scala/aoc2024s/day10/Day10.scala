@@ -23,6 +23,8 @@ object Day10 {
 
   case class Position(x: Int, y: Int)
 
+  type Path = List[Position]
+
   case class TopographicalMap(values: Array[Array[Int]]) {
     val height: Int = values.length
     val width: Int = values(0).length
@@ -45,54 +47,40 @@ object Day10 {
         if values(y)(x) == 0
       yield Position(x, y)
 
-    override def toString: String =
-      values.map(_.mkString).mkString("\n")
-
     def expand(p: Position): Seq[Position] =
       Direction.expand(p).filter(isInside)
 
-    def totalScore1: Int =
-      trailheads.map(score1).sum
+    def trails(start: Position): Seq[Path] =
+      trails(List(start))
 
-    def score1(p: Position): Int = {
-      def go(at: Position, found: Set[Position]): Set[Position] = {
-        val value = this (at)
-        if value == 9 then found + at
-        else {
-          expand(at)
-            .filter(p => this (p) == value + 1)
-            .foldLeft(found)((found, p) => go(p, found))
-        }
+    def trails(path: Path): Seq[Path] = {
+      val at = path.head
+      val value = this (at)
+      if value == 9 then Seq(path)
+      else {
+        expand(at)
+          .filter(p => this (p) == value + 1)
+          .flatMap(p => trails(p :: path))
       }
-
-      go(p, Set.empty).size
     }
 
-    def totalScore2: Int =
-      trailheads.map(score2).sum
+    def part1: Long =
+      trailheads
+        .flatMap(trails(_).map(_.head).distinct)
+        .size
 
-    def score2(p: Position): Int = {
-      def go(path: List[Position], found: Set[List[Position]]): Set[List[Position]] = {
-        val at = path.head
-        val value = this (at)
-        if value == 9 then found + path
-        else {
-          expand(at)
-            .filter(p => this (p) == value + 1)
-            .foldLeft(found)((found, p) => go(p :: path, found))
-        }
-      }
-
-      go(List(p), Set.empty).size
-    }
+    def part2: Long =
+      trailheads
+        .flatMap(trails)
+        .size
   }
 
   def part1(data: List[String]): Long = {
-    new TopographicalMap(data).totalScore1
+    new TopographicalMap(data).part1
   }
 
   def part2(data: List[String]): Long = {
-    new TopographicalMap(data).totalScore2
+    new TopographicalMap(data).part2
   }
 
   @main def main10(): Unit = {
