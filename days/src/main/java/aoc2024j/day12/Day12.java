@@ -5,6 +5,7 @@ import utils.CharGrid;
 import utils.IO;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Day12 {
@@ -73,6 +74,13 @@ public class Day12 {
                     .mapToLong(Region::price1)
                     .sum();
         }
+
+        public long price2() {
+            return regions.values().stream()
+                    .flatMap(List::stream)
+                    .mapToLong(Region::price2)
+                    .sum();
+        }
     }
 
     static class Region {
@@ -104,8 +112,47 @@ public class Day12 {
             return area() * sides();
         }
 
-        private long sides() {
-            return 0;
+        long sides() {
+            var groups =
+                    plots.stream().flatMap(GardenPlot::sides).collect(Collectors.groupingBy(Side::orientation));
+            var horizontal = groups.get(Orientation.HORIZONTAL);
+            var vertical = groups.get(Orientation.VERTICAL);
+            var horizontalPerY = horizontal.stream().collect(Collectors.groupingBy(Side::ref,
+                    Collectors.toCollection(ArrayList::new)));
+            var verticalPerX = vertical.stream().collect(Collectors.groupingBy(Side::ref,
+                    Collectors.toCollection(ArrayList::new)));
+            horizontalPerY.values().forEach(l -> l.sort(Comparator.comparingInt(s -> s.min)));
+            verticalPerX.values().forEach(l -> l.sort(Comparator.comparingInt(s -> s.min)));
+            var horizontalSides =
+                    horizontalPerY.values().stream().mapToLong(this::countSides).sum();
+            var verticalSides = verticalPerX.values().stream().mapToLong(this::countSides).sum();
+            return horizontalSides + verticalSides;
+        }
+
+        long countSides(List<Side> sides) {
+            // sides corresponds to the same value of ref
+            // and sorted incrementally by min
+            // it's not empty
+            var it = sides.iterator();
+            var current = it.next();
+            int count = 1;
+            while (it.hasNext()) {
+                var next = it.next();
+                if (current.min == next.min) {
+                    // current (nor next) form a side
+                    if (it.hasNext()) {
+                        // a segment has two sides so the new cannot be equal to the current
+                        current = it.next();
+                    }
+                    continue;
+                }
+                if (current.max < next.min) {
+                    // there is a gap between the segments
+                    count++;
+                }
+                current = next;
+            }
+            return count;
         }
     }
 
@@ -119,6 +166,22 @@ public class Day12 {
                     new GardenPlot(x, y + 1)
             );
         }
+
+        Stream<Side> sides() {
+            return Stream.of(
+                    new Side(y, x, x + 1, Orientation.HORIZONTAL),
+                    new Side(y + 1, x, x + 1, Orientation.HORIZONTAL),
+                    new Side(x, y, y + 1, Orientation.VERTICAL),
+                    new Side(x + 1, y, y + 1, Orientation.VERTICAL)
+            );
+        }
+    }
+
+    enum Orientation {
+        HORIZONTAL, VERTICAL
+    }
+
+    record Side(int ref, int min, int max, Orientation orientation) {
     }
 
     long part1(List<String> data) {
@@ -128,7 +191,9 @@ public class Day12 {
     }
 
     long part2(List<String> data) {
-        throw new UnsupportedOperationException("part2");
+        var map = new PlantMap(data);
+        var regions = map.findRegions();
+        return regions.price2();
     }
 
     public static void main() {
