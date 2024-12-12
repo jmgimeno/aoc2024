@@ -41,6 +41,25 @@ class Day12Test {
             MMMISSJEEE
             """;
 
+    static final String example4 =
+            """
+            EEEEE
+            EXXXX
+            EEEEE
+            EXXXX
+            EEEEE
+            """;
+
+    static final String example5 =
+            """
+            AAAAAA
+            AAABBA
+            AAABBA
+            ABBAAA
+            ABBAAA
+            AAAAAA
+            """;
+
     static final Day12 day12 = new Day12();
 
     @Test
@@ -66,21 +85,42 @@ class Day12Test {
 
     @Test
     @DisplayName("part1 - input data")
-    void test2() {
+    void test1_input() {
         var data = IO.getResourceAsList("aoc2024/day12.txt");
         assertEquals(1549354L, day12.part1(data));
     }
 
     @Test
-    @DisplayName("part2 - example data")
-    void test3() {
+    @DisplayName("part2 - example1 data")
+    void test2_1() {
         var data = IO.splitLinesAsList(example1);
-        assertEquals(-1L, day12.part2(data));
+        assertEquals(436L, day12.part2(data));
+    }
+
+    @Test
+    @DisplayName("part2 - example3 data")
+    void test2_3() {
+        var data = IO.splitLinesAsList(example3);
+        assertEquals(1206L, day12.part2(data));
+    }
+
+    @Test
+    @DisplayName("part2 - example4 data")
+    void test2_4() {
+        var data = IO.splitLinesAsList(example4);
+        assertEquals(236L, day12.part2(data));
+    }
+
+    @Test
+    @DisplayName("part2 - example5 data")
+    void test2_5() {
+        var data = IO.splitLinesAsList(example5);
+        assertEquals(368L, day12.part2(data));
     }
 
     @Test
     @DisplayName("part2 - input data")
-    void test4() {
+    void test4_input() {
         var data = IO.getResourceAsList("aoc2024/day12.txt");
         assertEquals(-1L, day12.part2(data));
     }
