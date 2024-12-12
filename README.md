@@ -8,10 +8,10 @@
 - Day6: Guard Gallivant
 - Day7: Bridge Repair
 - Day8: Resonant Collinearity
-- Day9: ???
-- Day10: ??? 
-- Day11: ???
-- Day12: ???
+- Day9: Disk Fragmenter
+- Day10: Hoof It
+- Day11: Plutonian Pebbles
+- Day12: Garden Groups
 - Day13: ???
 - Day14: ???
 - Day15: ???
