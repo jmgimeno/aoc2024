@@ -124,4 +124,10 @@ class Day12Test {
         var data = IO.getResourceAsList("aoc2024/day12.txt");
         assertEquals(-1L, day12.part2(data));
     }
+
+    @Test
+    void miniTest1() {
+        var data = IO.splitLinesAsList("AAAAA");
+        assertEquals(20L, day12.part2(data));
+    }
 }

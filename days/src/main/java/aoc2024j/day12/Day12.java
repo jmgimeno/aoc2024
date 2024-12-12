@@ -114,45 +114,45 @@ public class Day12 {
 
         long sides() {
             var groups =
-                    plots.stream().flatMap(GardenPlot::sides).collect(Collectors.groupingBy(Side::orientation));
-            var horizontal = groups.get(Orientation.HORIZONTAL);
-            var vertical = groups.get(Orientation.VERTICAL);
-            var horizontalPerY = horizontal.stream().collect(Collectors.groupingBy(Side::ref,
-                    Collectors.toCollection(ArrayList::new)));
-            var verticalPerX = vertical.stream().collect(Collectors.groupingBy(Side::ref,
-                    Collectors.toCollection(ArrayList::new)));
-            horizontalPerY.values().forEach(l -> l.sort(Comparator.comparingInt(s -> s.min)));
-            verticalPerX.values().forEach(l -> l.sort(Comparator.comparingInt(s -> s.min)));
-            var horizontalSides =
-                    horizontalPerY.values().stream().mapToLong(this::countSides).sum();
-            var verticalSides = verticalPerX.values().stream().mapToLong(this::countSides).sum();
-            return horizontalSides + verticalSides;
+                    plots.stream()
+                            .flatMap(GardenPlot::sides)
+                            .collect(Collectors.groupingBy(
+                                    Side::orientation,
+                                    Collectors
+                                            .groupingBy(
+                                                    Side::ref,
+                                                    Collectors.mapping(Side::coord,
+                                                            Collectors.toCollection(ArrayList::new)
+                                                    ))));
+            // groups contains the sides grouped by orientation and ref
+            // sort each list of sides by coord
+            groups.values().forEach(m ->
+                    m.values().forEach(l ->
+                            l.sort(Comparator.naturalOrder())));
+
+            // count the number of sides with a gap of 1
+            return groups.values().stream()
+                    .flatMap(m -> m.values().stream())
+                    .mapToLong(this::countSides)
+                    .sum();
         }
 
-        long countSides(List<Side> sides) {
-            // sides corresponds to the same value of ref
-            // and sorted incrementally by min
-            // it's not empty
-            var it = sides.iterator();
-            var current = it.next();
-            int count = 1;
-            while (it.hasNext()) {
-                var next = it.next();
-                if (current.min == next.min) {
-                    // current (nor next) form a side
-                    if (it.hasNext()) {
-                        // a segment has two sides so the new cannot be equal to the current
-                        current = it.next();
-                    }
-                    continue;
+        long countSides(List<Integer> sides) {
+            var purgedSides = new ArrayList<>(sides);
+            for (int i = sides.size() - 2; i >= 0; i--) {
+                if (Objects.equals(sides.get(i), sides.get(i + 1))) {
+                    purgedSides.remove(i + 1);
+                    purgedSides.remove(i);
+                    i--;
                 }
-                if (current.max < next.min) {
-                    // there is a gap between the segments
-                    count++;
-                }
-                current = next;
             }
-            return count;
+            long counter = purgedSides.isEmpty() ? 0 : 1;
+            for (int i = 0; i < purgedSides.size() - 1; i++) {
+                if (purgedSides.get(i + 1) - purgedSides.get(i) > 1) {
+                    counter++;
+                }
+            }
+            return counter;
         }
     }
 
@@ -169,10 +169,10 @@ public class Day12 {
 
         Stream<Side> sides() {
             return Stream.of(
-                    new Side(y, x, x + 1, Orientation.HORIZONTAL),
-                    new Side(y + 1, x, x + 1, Orientation.HORIZONTAL),
-                    new Side(x, y, y + 1, Orientation.VERTICAL),
-                    new Side(x + 1, y, y + 1, Orientation.VERTICAL)
+                    new Side(y, x, Orientation.HORIZONTAL),
+                    new Side(y + 1, x, Orientation.HORIZONTAL),
+                    new Side(x, y, Orientation.VERTICAL),
+                    new Side(x + 1, y, Orientation.VERTICAL)
             );
         }
     }
@@ -181,7 +181,7 @@ public class Day12 {
         HORIZONTAL, VERTICAL
     }
 
-    record Side(int ref, int min, int max, Orientation orientation) {
+    record Side(int ref, int coord, Orientation orientation) {
     }
 
     long part1(List<String> data) {
