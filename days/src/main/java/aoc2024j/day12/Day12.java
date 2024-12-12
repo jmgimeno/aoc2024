@@ -130,8 +130,10 @@ public class Day12 {
                     m.values().forEach(l ->
                             l.sort(Comparator.naturalOrder())));
 
+            //System.out.println("====================================");
             // count the number of sides with a gap of 1
             return groups.values().stream()
+                    //.peek(_ -> System.out.println("-----------------"))
                     .flatMap(m -> m.values().stream())
                     .mapToLong(this::countSides)
                     .sum();
@@ -152,6 +154,7 @@ public class Day12 {
                     counter++;
                 }
             }
+            //System.out.println("sides = " + sides + " purgedSides = " + purgedSides + " counter = " + counter);
             return counter;
         }
     }

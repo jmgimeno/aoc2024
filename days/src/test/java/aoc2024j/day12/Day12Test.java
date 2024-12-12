@@ -94,6 +94,13 @@ class Day12Test {
     @DisplayName("part2 - example1 data")
     void test2_1() {
         var data = IO.splitLinesAsList(example1);
+        assertEquals(80L, day12.part2(data));
+    }
+
+    @Test
+    @DisplayName("part2 - example3 data")
+    void test2_2() {
+        var data = IO.splitLinesAsList(example2);
         assertEquals(436L, day12.part2(data));
     }
 
