@@ -5,8 +5,6 @@ import utils.CharGrid;
 import utils.IO;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Day12 {
@@ -18,7 +16,7 @@ public class Day12 {
         }
 
         Regions findRegions() {
-            var regions = new Regions(this);
+            var regions = new Regions();
             var assigned = new boolean[height][width];
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
@@ -64,25 +62,16 @@ public class Day12 {
 
     static class Regions {
         private final Map<Character, List<Region>> regions = new HashMap<>();
-        private final PlantMap map;
-
-        Regions(PlantMap map) {
-            this.map = map;
-        }
 
         public void addRegion(char plant, Region region) {
-            regions.computeIfAbsent(plant, k -> new ArrayList<>()).add(region);
+            regions.computeIfAbsent(plant, _ -> new ArrayList<>()).add(region);
         }
 
-        public int price() {
+        public long price1() {
             return regions.values().stream()
                     .flatMap(List::stream)
-                    .mapToInt(this::regionPrice)
+                    .mapToLong(Region::price1)
                     .sum();
-        }
-
-        public int regionPrice(Region region) {
-            return region.price();
         }
     }
 
@@ -97,18 +86,26 @@ public class Day12 {
             plots.add(plot);
         }
 
-        public int area() {
+        public long area() {
             return plots.size();
         }
 
-        public int innerPerimeter() {
-            return (int) plots.stream().flatMap(GardenPlot::neighbors)
+        public long totalPerimeter() {
+            return plots.stream().flatMap(GardenPlot::neighbors)
                     .filter(p -> !plots.contains(p))
                     .count();
         }
 
-        public int price() {
-            return area() * innerPerimeter();
+        public long price1() {
+            return area() * totalPerimeter();
+        }
+
+        public long price2() {
+            return area() * sides();
+        }
+
+        private long sides() {
+            return 0;
         }
     }
 
@@ -127,7 +124,7 @@ public class Day12 {
     long part1(List<String> data) {
         var map = new PlantMap(data);
         var regions = map.findRegions();
-        return regions.price();
+        return regions.price1();
     }
 
     long part2(List<String> data) {
