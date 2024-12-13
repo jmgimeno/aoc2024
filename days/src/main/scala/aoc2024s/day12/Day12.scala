@@ -100,8 +100,8 @@ object Day12 {
 
     def sides(plantMap: PlantMap): Long =
       (for {
-        vertical <- List(Direction.N, Direction.S)
-        horizontal <- List(Direction.W, Direction.E)
+        vertical <- Iterator(Direction.N, Direction.S)
+        horizontal <- Iterator(Direction.W, Direction.E)
         isCorner = plantMap.isCorner(vertical, horizontal)
         plot <- plots
         if isCorner(plot)
