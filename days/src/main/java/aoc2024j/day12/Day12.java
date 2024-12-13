@@ -5,7 +5,8 @@ import utils.CharGrid;
 import utils.IO;
 
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Gatherers;
 import java.util.stream.Stream;
 
 public class Day12 {
@@ -17,13 +18,11 @@ public class Day12 {
         }
 
         Regions findRegions() {
-            var regions = new Regions(this);
+            var regions = new Regions();
             var assigned = new boolean[height][width];
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    if (assigned[y][x]) {
-                        continue;
-                    }
+                    if (assigned[y][x]) continue;
                     var plant = points[y][x];
                     Region region = expandRegion(x, y, assigned);
                     regions.addRegion(plant, region);
@@ -59,54 +58,10 @@ public class Day12 {
             ).filter(p -> p.x >= 0 && p.x < width && p.y >= 0 && p.y < height).toList();
         }
 
-        private boolean isInside(int x, int y) {
-            return 0 <= x && x < width && 0 <= y && y < height;
-        }
-
-        private int get(int x, int y) {
-            return isInside(x, y) ? points[y][x] : -1;
-        }
-
-        private boolean isCornerNW(GardenPlot p) {
-            var v = get(p.x, p.y);
-            var nw = get(p.x - 1, p.y - 1);
-            var n = get(p.x, p.y - 1);
-            var w = get(p.x - 1, p.y);
-            return nw != v && n == v && w == v || nw != v && n != v && w != v || nw == v && n != v && w != v;
-        }
-
-        private boolean isCornerNE(GardenPlot p) {
-            var v = get(p.x, p.y);
-            var ne = get(p.x + 1, p.y - 1);
-            var n = get(p.x, p.y - 1);
-            var e = get(p.x + 1, p.y);
-            return ne != v && n == v && e == v ||  (ne != v && n != v && e != v) || (ne == v && n != v && e != v);
-        }
-
-        private boolean isCornerSW(GardenPlot p) {
-            var v = get(p.x, p.y);
-            var sw = get(p.x - 1, p.y + 1);
-            var s = get(p.x, p.y + 1);
-            var w = get(p.x - 1, p.y);
-            return sw != v && s == v && w == v || (sw != v && s != v && w != v) || (sw == v && s != v && w != v);
-        }
-
-        private boolean isCornerSE(GardenPlot p) {
-            var v = get(p.x, p.y);
-            var se = get(p.x + 1, p.y + 1);
-            var s = get(p.x, p.y + 1);
-            var e = get(p.x + 1, p.y);
-            return se != v && s == v && e == v || (se != v && s != v && e != v) || (se == v && s != v && e != v);
-        }
     }
 
     static class Regions {
         private final Map<Character, List<Region>> regions = new HashMap<>();
-        private final PlantMap plantMap;
-
-        public Regions(PlantMap plantMap) {
-            this.plantMap = plantMap;
-        }
 
         public void addRegion(char plant, Region region) {
             regions.computeIfAbsent(plant, _ -> new ArrayList<>()).add(region);
@@ -122,13 +77,21 @@ public class Day12 {
         public long price2() {
             return regions.values().stream()
                     .flatMap(List::stream)
-                    .mapToLong(r -> r.price2(plantMap))
+                    .mapToLong(Region::price2)
                     .sum();
         }
     }
 
     static class Region {
-        List<GardenPlot> plots = new ArrayList<>();
+        final List<GardenPlot> plots = new ArrayList<>();
+        Map<Orientation, Map<Integer, List<Wall>>> cachedWalls = null;
+
+        private Map<Orientation, Map<Integer, List<Wall>>> walls() {
+            if (cachedWalls == null) {
+                cachedWalls = GardenPlot.generateWalls(plots);
+            }
+            return cachedWalls;
+        }
 
         public Region(GardenPlot plot) {
             plots.add(plot);
@@ -136,42 +99,123 @@ public class Day12 {
 
         public void add(GardenPlot plot) {
             plots.add(plot);
-        }
-
-        public long area() {
-            return plots.size();
-        }
-
-        public long totalPerimeter() {
-            return plots.stream().flatMap(GardenPlot::neighbors)
-                    .filter(p -> !plots.contains(p))
-                    .count();
+            cachedWalls = null;
         }
 
         public long price1() {
-            return area() * totalPerimeter();
+            return area() * perimeter();
         }
 
-        public long price2(PlantMap plantMap) {
-            return area() * sides(plantMap);
+        public long price2() {
+            return area() * sides();
         }
 
-        public long sides(PlantMap plantMap) {
-            Stream<Predicate<GardenPlot>> corners =
-                    Stream.of(plantMap::isCornerNW, plantMap::isCornerNE, plantMap::isCornerSW, plantMap::isCornerSE);
-            return corners.map(p -> plots.stream().filter(p).count()).reduce(0L, Long::sum);
+        private long area() {
+            return plots.size();
         }
+
+        private long perimeter() {
+            return walls().values().stream()
+                    .flatMap(m -> m.values().stream())
+                    .mapToLong(List::size)
+                    .sum();
+        }
+
+        private long sides() {
+            return walls().values().stream()
+                    .flatMap(m -> m.values().stream())
+                    .mapToLong(Wall::countWalls)
+                    .sum();
+        }
+
     }
 
     record GardenPlot(int x, int y) {
 
-        Stream<GardenPlot> neighbors() {
+        private static Map<Orientation, Map<Integer, List<Wall>>> generateWalls(List<GardenPlot> plots) {
+            return plots.stream()
+                    .flatMap(GardenPlot::walls)
+                    .collect(Collectors.groupingBy(
+                            s -> s.direction().orientation(),
+                            Collectors
+                                    .groupingBy(
+                                            Wall::ref,
+                                            Collectors.collectingAndThen(
+                                                    Collectors.toList(),
+                                                    walls -> {
+                                                        walls.sort(Comparator.comparingInt(Wall::coordinate));
+                                                        return Wall.filterWalls(walls);
+                                                    }
+                                            ))));
+        }
+
+        private Stream<Wall> walls() {
             return Stream.of(
-                    new GardenPlot(x - 1, y),
-                    new GardenPlot(x + 1, y),
-                    new GardenPlot(x, y - 1),
-                    new GardenPlot(x, y + 1)
+                    new Wall(y, x, Direction.UP),
+                    new Wall(y + 1, x, Direction.DOWN),
+                    new Wall(x, y, Direction.LEFT),
+                    new Wall(x + 1, y, Direction.RIGHT)
             );
+        }
+    }
+
+    enum Orientation {
+        HORIZONTAL, VERTICAL
+    }
+
+    enum Direction {
+        UP, DOWN, LEFT, RIGHT;
+
+        Orientation orientation() {
+            return this == UP || this == DOWN ? Orientation.HORIZONTAL : Orientation.VERTICAL;
+        }
+
+        static Stream<Direction> all() {
+            return Stream.of(UP, DOWN, LEFT, RIGHT);
+        }
+    }
+
+    record Wall(int ref, int coordinate, Direction direction) {
+
+        static long countWalls(List<Wall> walls) {
+            return
+                    walls.stream().collect(
+                            Collectors.collectingAndThen(
+                                    Collectors.groupingBy(Wall::direction,
+                                            Collectors.mapping(Wall::coordinate,
+                                                    Collectors.toList())),
+                                    coordinatesByDirection -> Direction.all()
+                                            .mapToLong(d -> countGaps(coordinatesByDirection.getOrDefault(d, List.of())))
+                                            .sum()));
+        }
+
+        private static long countGaps(List<Integer> coordinates) {
+            if (coordinates.isEmpty()) return 0;
+            long counter = 1;
+            var it = coordinates.iterator();
+            var current = it.next();
+            while (it.hasNext()) {
+                var next = it.next();
+                if (next - current > 1) {
+                    counter++;
+                }
+                current = next;
+            }
+            return counter;
+        }
+
+        private static List<Wall> filterWalls(List<Wall> candidateWalls) {
+            if (candidateWalls.size() < 2) {
+                return candidateWalls;
+            }
+            var purged = candidateWalls.stream()
+                    .gather(Gatherers.windowSliding(2))
+                    .filter(l -> l.get(0).coordinate() == l.get(1).coordinate())
+                    .map(l -> l.get(0).coordinate())
+                    .collect(Collectors.toSet());
+            return candidateWalls.stream()
+                    .filter(wall -> !purged.contains(wall.coordinate()))
+                    .collect(Collectors.toList());
         }
     }
 

@@ -8,14 +8,6 @@
       <module name="aoc2024.meta2024.main" target="23" />
       <module name="aoc2024.meta2024.test" target="23" />
       <module name="aoc2024.test" target="23" />
-      <module name="days2024" target="23" />
-      <module name="days2024.meta2024" target="23" />
     </bytecodeTargetLevel>
-  </component>
-  <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="aoc2024.days2024.main" options="" />
-      <module name="aoc2024.days2024.test" options="" />
-    </option>
   </component>
 </project>
