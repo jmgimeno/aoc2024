@@ -35,11 +35,11 @@ class Day13Suite extends FunSuite {
 
   test("part2 - example data") {
     val data = IO.splitLinesAsList(example).asScala.toList
-    assertEquals(Day13.part2(data), -1L)
+    assertEquals(Day13.part2(data), BigInt("875318608908"))
   }
 
   test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day13.txt").asScala.toList
-    assertEquals(Day13.part2(data), -1L)
+    assertEquals(Day13.part2(data), BigInt("101726882250942"))
   }
 }

@@ -6,33 +6,39 @@ import scala.jdk.CollectionConverters.*
 
 object Day13 {
 
+  extension (s: String) {
+    def toBigInt: BigInt = BigInt(s)
+  }
+
   object Parser {
 
     private val buttonRegexp = """Button [A-Z]: X\+(\d+), Y\+(\d+)""".r
     private val prizeRegexp = """Prize: X=(\d+), Y=(\d+)""".r
 
-    def parse(data: List[String]): List[Machine] = {
-      data.filterNot(_.isEmpty).grouped(3).map(parseMachine).toList
+    def parse(data: List[String], increment: BigInt = BigInt(0)): List[Machine] = {
+      data.filterNot(_.isEmpty).grouped(3).map(parseMachine(increment)).toList
     }
 
-    def parseMachine(data: List[String]): Machine = {
+    def parseMachine(increment: BigInt)(data: List[String]): Machine = {
       val matchA = buttonRegexp.findFirstMatchIn(data(0)).get
       val matchB = buttonRegexp.findFirstMatchIn(data(1)).get
       val matchPrize = prizeRegexp.findFirstMatchIn(data(2)).get
-      val a = Button(matchA.group(1).toLong, matchA.group(2).toLong)
-      val b = Button(matchB.group(1).toLong, matchB.group(2).toLong)
-      val prize = Prize(matchPrize.group(1).toLong, matchPrize.group(2).toLong)
+      val a = Button(matchA.group(1).toBigInt, matchA.group(2).toBigInt)
+      val b = Button(matchB.group(1).toBigInt, matchB.group(2).toBigInt)
+      val incrementedX = increment + matchPrize.group(1).toBigInt
+      val incrementedY = increment + matchPrize.group(2).toBigInt
+      val prize = Prize(incrementedX, incrementedY)
       Machine(a, b, prize)
     }
   }
 
-  case class Button(dx: Long, dy: Long) {}
+  case class Button(dx: BigInt, dy: BigInt)
 
-  case class Prize(x: Long, y: Long) {}
+  case class Prize(x: BigInt, y: BigInt)
 
   case class Machine(a: Button, b: Button, prize: Prize) {
 
-    private inline def determinant(m00: Long, m01: Long, m10: Long, m11: Long): Long = {
+    private inline def determinant(m00: BigInt, m01: BigInt, m10: BigInt, m11: BigInt): BigInt = {
       m00 * m11 - m01 * m10
     }
 
@@ -49,32 +55,28 @@ object Day13 {
         } else {
           val pushA = detA / delta
           val pushB = detB / delta
-          // must be in range [0, 100]
-          if (pushA < 0 || pushA > 100 || pushB < 0 || pushB > 100) {
-            Execution(0, 0)
-          } else {
-            val tokens = 3 * pushA + pushB
-            Execution(1, tokens)
-          }
+          val tokens = 3 * pushA + pushB
+          Execution(1, tokens)
+
         }
       }
     }
   }
 
-  case class Execution(prizes: Long, tokens: Long) {}
+  case class Execution(prizes: BigInt, tokens: BigInt) {}
 
-  def totalTokens(machines: List[Machine]): Long = {
+  def totalTokens(machines: List[Machine]): BigInt = {
     machines.map(_.execute).map(_.tokens).sum
   }
 
   def part1(data: List[String]): Long = {
     val machines = Parser.parse(data);
-    println(machines)
-    totalTokens(machines)
+    totalTokens(machines).toLong
   }
 
-  def part2(data: List[String]): Long = {
-    throw new UnsupportedOperationException("part2");
+  def part2(data: List[String]): BigInt = {
+    val machines = Parser.parse(data, BigInt("10000000000000"));
+    totalTokens(machines)
   }
 
   @main def main13(): Unit = {
