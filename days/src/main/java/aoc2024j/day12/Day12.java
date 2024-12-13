@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Gatherers;
 import java.util.stream.Stream;
 
+import static java.util.Comparator.*;
+import static java.util.stream.Collectors.*;
+
 public class Day12 {
 
     static class PlantMap extends CharGrid {
@@ -135,18 +138,17 @@ public class Day12 {
         private static Map<Orientation, Map<Integer, List<Wall>>> generateWalls(List<GardenPlot> plots) {
             return plots.stream()
                     .flatMap(GardenPlot::walls)
-                    .collect(Collectors.groupingBy(
+                    .collect(groupingBy(
                             s -> s.direction().orientation(),
-                            Collectors
-                                    .groupingBy(
-                                            Wall::ref,
-                                            Collectors.collectingAndThen(
-                                                    Collectors.toList(),
-                                                    walls -> {
-                                                        walls.sort(Comparator.comparingInt(Wall::coordinate));
-                                                        return Wall.filterWalls(walls);
-                                                    }
-                                            ))));
+                            groupingBy(
+                                    Wall::ref,
+                                    collectingAndThen(
+                                            toList(),
+                                            walls -> {
+                                                walls.sort(comparingInt(Wall::coordinate));
+                                                return Wall.filterWalls(walls);
+                                            }
+                                    ))));
         }
 
         private Stream<Wall> walls() {
@@ -178,15 +180,14 @@ public class Day12 {
     record Wall(int ref, int coordinate, Direction direction) {
 
         static long countWalls(List<Wall> walls) {
-            return
-                    walls.stream().collect(
-                            Collectors.collectingAndThen(
-                                    Collectors.groupingBy(Wall::direction,
-                                            Collectors.mapping(Wall::coordinate,
-                                                    Collectors.toList())),
-                                    coordinatesByDirection -> Direction.all()
-                                            .mapToLong(d -> countGaps(coordinatesByDirection.getOrDefault(d, List.of())))
-                                            .sum()));
+            return walls.stream().collect(
+                    collectingAndThen(
+                            groupingBy(Wall::direction,
+                                    mapping(Wall::coordinate, toList())),
+                            coordinates -> Direction.all()
+                                    .mapToLong(d ->
+                                            countGaps(coordinates.getOrDefault(d, List.of())))
+                                    .sum()));
         }
 
         private static long countGaps(List<Integer> coordinates) {
@@ -212,10 +213,10 @@ public class Day12 {
                     .gather(Gatherers.windowSliding(2))
                     .filter(l -> l.get(0).coordinate() == l.get(1).coordinate())
                     .map(l -> l.get(0).coordinate())
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
             return candidateWalls.stream()
                     .filter(wall -> !purged.contains(wall.coordinate()))
-                    .collect(Collectors.toList());
+                    .collect(toList());
         }
     }
 
