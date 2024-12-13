@@ -5,7 +5,7 @@ import utils.CharGrid;
 import utils.IO;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class Day12 {
@@ -17,7 +17,7 @@ public class Day12 {
         }
 
         Regions findRegions() {
-            var regions = new Regions();
+            var regions = new Regions(this);
             var assigned = new boolean[height][width];
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
@@ -59,10 +59,54 @@ public class Day12 {
             ).filter(p -> p.x >= 0 && p.x < width && p.y >= 0 && p.y < height).toList();
         }
 
+        private boolean isInside(int x, int y) {
+            return 0 <= x && x < width && 0 <= y && y < height;
+        }
+
+        private int get(int x, int y) {
+            return isInside(x, y) ? points[y][x] : -1;
+        }
+
+        private boolean isCornerNW(GardenPlot p) {
+            var v = get(p.x, p.y);
+            var nw = get(p.x - 1, p.y - 1);
+            var n = get(p.x, p.y - 1);
+            var w = get(p.x - 1, p.y);
+            return nw != v && n == v && w == v || nw != v && n != v && w != v || nw == v && n != v && w != v;
+        }
+
+        private boolean isCornerNE(GardenPlot p) {
+            var v = get(p.x, p.y);
+            var ne = get(p.x + 1, p.y - 1);
+            var n = get(p.x, p.y - 1);
+            var e = get(p.x + 1, p.y);
+            return ne != v && n == v && e == v ||  (ne != v && n != v && e != v) || (ne == v && n != v && e != v);
+        }
+
+        private boolean isCornerSW(GardenPlot p) {
+            var v = get(p.x, p.y);
+            var sw = get(p.x - 1, p.y + 1);
+            var s = get(p.x, p.y + 1);
+            var w = get(p.x - 1, p.y);
+            return sw != v && s == v && w == v || (sw != v && s != v && w != v) || (sw == v && s != v && w != v);
+        }
+
+        private boolean isCornerSE(GardenPlot p) {
+            var v = get(p.x, p.y);
+            var se = get(p.x + 1, p.y + 1);
+            var s = get(p.x, p.y + 1);
+            var e = get(p.x + 1, p.y);
+            return se != v && s == v && e == v || (se != v && s != v && e != v) || (se == v && s != v && e != v);
+        }
     }
 
     static class Regions {
         private final Map<Character, List<Region>> regions = new HashMap<>();
+        private final PlantMap plantMap;
+
+        public Regions(PlantMap plantMap) {
+            this.plantMap = plantMap;
+        }
 
         public void addRegion(char plant, Region region) {
             regions.computeIfAbsent(plant, _ -> new ArrayList<>()).add(region);
@@ -78,7 +122,7 @@ public class Day12 {
         public long price2() {
             return regions.values().stream()
                     .flatMap(List::stream)
-                    .mapToLong(Region::price2)
+                    .mapToLong(r -> r.price2(plantMap))
                     .sum();
         }
     }
@@ -108,54 +152,14 @@ public class Day12 {
             return area() * totalPerimeter();
         }
 
-        public long price2() {
-            return area() * sides();
+        public long price2(PlantMap plantMap) {
+            return area() * sides(plantMap);
         }
 
-        long sides() {
-            var groups =
-                    plots.stream()
-                            .flatMap(GardenPlot::sides)
-                            .collect(Collectors.groupingBy(
-                                    Side::orientation,
-                                    Collectors
-                                            .groupingBy(
-                                                    Side::ref,
-                                                    Collectors.mapping(Side::coord,
-                                                            Collectors.toCollection(ArrayList::new)
-                                                    ))));
-            // groups contains the sides grouped by orientation and ref
-            // sort each list of sides by coord
-            groups.values().forEach(m ->
-                    m.values().forEach(l ->
-                            l.sort(Comparator.naturalOrder())));
-
-            //System.out.println("====================================");
-            // count the number of sides with a gap of 1
-            return groups.values().stream()
-                    //.peek(_ -> System.out.println("-----------------"))
-                    .flatMap(m -> m.values().stream())
-                    .mapToLong(this::countSides)
-                    .sum();
-        }
-
-        long countSides(List<Integer> sides) {
-            var purgedSides = new ArrayList<>(sides);
-            for (int i = sides.size() - 2; i >= 0; i--) {
-                if (Objects.equals(sides.get(i), sides.get(i + 1))) {
-                    purgedSides.remove(i + 1);
-                    purgedSides.remove(i);
-                    i--;
-                }
-            }
-            long counter = purgedSides.isEmpty() ? 0 : 1;
-            for (int i = 0; i < purgedSides.size() - 1; i++) {
-                if (purgedSides.get(i + 1) - purgedSides.get(i) > 1) {
-                    counter++;
-                }
-            }
-            //System.out.println("sides = " + sides + " purgedSides = " + purgedSides + " counter = " + counter);
-            return counter;
+        public long sides(PlantMap plantMap) {
+            Stream<Predicate<GardenPlot>> corners =
+                    Stream.of(plantMap::isCornerNW, plantMap::isCornerNE, plantMap::isCornerSW, plantMap::isCornerSE);
+            return corners.map(p -> plots.stream().filter(p).count()).reduce(0L, Long::sum);
         }
     }
 
@@ -169,22 +173,6 @@ public class Day12 {
                     new GardenPlot(x, y + 1)
             );
         }
-
-        Stream<Side> sides() {
-            return Stream.of(
-                    new Side(y, x, Orientation.HORIZONTAL),
-                    new Side(y + 1, x, Orientation.HORIZONTAL),
-                    new Side(x, y, Orientation.VERTICAL),
-                    new Side(x + 1, y, Orientation.VERTICAL)
-            );
-        }
-    }
-
-    enum Orientation {
-        HORIZONTAL, VERTICAL
-    }
-
-    record Side(int ref, int coord, Orientation orientation) {
     }
 
     long part1(List<String> data) {

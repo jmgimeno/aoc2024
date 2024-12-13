@@ -129,7 +129,7 @@ class Day12Test {
     @DisplayName("part2 - input data")
     void test4_input() {
         var data = IO.getResourceAsList("aoc2024/day12.txt");
-        assertEquals(-1L, day12.part2(data));
+        assertEquals(937032L, day12.part2(data));
     }
 
     @Test
