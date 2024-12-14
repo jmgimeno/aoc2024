@@ -1,6 +1,9 @@
 ### Advent of Code template
 /days/src/main/resources/
 
+### BSP
+.bsp/
+
 ### Java template
 # Compiled class file
 *.class

@@ -1,4 +1,4 @@
-ThisBuild / scalaVersion := "3.5.2"
+ThisBuild / scalaVersion := "3.6.2"
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / javacOptions ++= Seq("-source", "23", "-target", "23", "--enable-preview")
 ThisBuild / javaOptions ++= Seq("--enable-preview")
