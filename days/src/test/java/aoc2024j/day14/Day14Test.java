@@ -29,7 +29,7 @@ class Day14Test {
 
     static final Day14 day14 = new Day14();
 
-    static long runPart1(List<String> data) {
+    static int runPart1(List<String> data) {
         var space = new Day14.Space(11, 7);
         var state = space.parse(data);
         state.run(100);
@@ -40,20 +40,20 @@ class Day14Test {
     @DisplayName("part1 - example data")
     void test1() {
         var data = IO.splitLinesAsList(example);
-        assertEquals(12L, runPart1(data));
+        assertEquals(12, runPart1(data));
     }
 
     @Test
     @DisplayName("part1 - input data")
     void test2() {
         var data = IO.getResourceAsList("aoc2024/day14.txt");
-        assertEquals(216772608L, day14.part1(data));
+        assertEquals(216772608, day14.part1(data));
     }
 
     @Test
     @DisplayName("part2 - input data")
     void test4() {
         var data = IO.getResourceAsList("aoc2024/day14.txt");
-        assertEquals(6888L, day14.part2(data));
+        assertEquals(6888, day14.part2(data));
     }
 }

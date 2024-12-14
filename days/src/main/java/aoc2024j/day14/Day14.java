@@ -219,22 +219,44 @@ public class Day14 {
             sb.append("+".repeat(Math.max(0, space.width + 2)));
             return sb.toString();
         }
+
+        // The most simple (and obvious) way to solve part 2
+        // Try max or min of the part1 function
+        // Should've tried it first !!!!
+        public int minSafety(int maxSteps) {
+            var minT = 0;
+            var minSafety = safety();
+            for (int t = 1; t < maxSteps; t++) {
+                run(1);
+                var safety = safety();
+                if (safety < minSafety) {
+                    minSafety = safety;
+                    minT = t;
+                }
+            }
+            return minT;
+        }
     }
 
-    long part1(List<String> data) {
+    int part1(List<String> data) {
         var space = new Space(101, 103);
         var state = space.parse(data);
         state.run(100);
         return state.safety();
     }
 
-    long part2(List<String> data) {
+    int part2(List<String> data) {
         var space = new Space(101, 103);
         var state = space.parse(data);
         var maxSteps = 101 * 103;
-        var t = state.runToTreeLike(maxSteps);
+        return state.minSafety(maxSteps);
+    }
+
+    private void show(List<String> data, int part2) {
+        var space = new Space(101, 103);
+        var state = space.parse(data);
+        state.run(part2);
         System.out.println(state);
-        return t;
     }
 
     public static void main() {
@@ -244,5 +266,6 @@ public class Day14 {
         System.out.println("part1 = " + part1);
         var part2 = day14.part2(data);
         System.out.println("part2 = " + part2);
+        day14.show(data, part2);
     }
 }
