@@ -106,19 +106,8 @@ public class Day14 {
         public int safety() {
             return quadrants[NW] * quadrants[NE] * quadrants[SE] * quadrants[SW];
         }
-
-        // Ideas that didn't work:
-        public boolean nonOverlapping() {
-            for (int y = 0; y < space.height; y++) {
-                for (int x = 0; x < space.width; x++) {
-                    if (counters[y][x] > 1) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
+        
+        // These two didn't work
         public boolean loadedOnTop(double threshold) {
             double top = quadrants[NW] + quadrants[NE];
             double bottom = quadrants[SW] + quadrants[SE];
@@ -174,7 +163,7 @@ public class Day14 {
 
             return max > threshold * robots.size();
         }
-
+        
         // same idea but easier to implement
         public boolean robotsAreClustered(double threshold) {
             var count = 0;
@@ -190,10 +179,24 @@ public class Day14 {
             }
             return count > threshold * robots.size();
         }
+        
+        // the simplest way (I tried it, but it seemed not to work)
+        // maybe there was a bug somewhere else....
+        public boolean nonOverlapping() {
+            for (int y = 0; y < space.height; y++) {
+                for (int x = 0; x < space.width; x++) {
+                    if (counters[y][x] > 1) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
 
         public boolean treeLike() {
 //            return hasBigConnectedComponent(0.4);
-            return robotsAreClustered(0.5);
+//            return robotsAreClustered(0.5);
+            return nonOverlapping();
         }
 
         @Override
