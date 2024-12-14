@@ -68,10 +68,10 @@ public class Day14 {
     }
 
     static final class State {
-        private final List<Robot> robots;
-        private final Space space;
-        private final int[] quadrants;
-        private final int[][] counters;
+        final List<Robot> robots;
+        final Space space;
+        final int[] quadrants;
+        final int[][] counters;
 
         State(List<Robot> robots, Space space) {
             this.robots = robots;
