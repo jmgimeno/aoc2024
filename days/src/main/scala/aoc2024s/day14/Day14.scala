@@ -70,9 +70,10 @@ object Day14 {
     val initial = Space(101, 103).parse(data)
     LazyList
       .iterate(initial)(_.run())
+      .map(_.safety)
       .take(101 * 103)
       .zipWithIndex
-      .minBy(_._1.safety)
+      .minBy(_._1)
       ._2
   }
 
