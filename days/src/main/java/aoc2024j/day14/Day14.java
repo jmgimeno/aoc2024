@@ -228,8 +228,8 @@ public class Day14 {
     long part2(List<String> data) {
         var space = new Space(101, 103);
         var state = space.parse(data);
-        var max = 10_000;
-        var t = state.runToTreeLike(max);
+        var maxSteps = 101 * 103;
+        var t = state.runToTreeLike(maxSteps);
         System.out.println(state);
         return t;
     }
