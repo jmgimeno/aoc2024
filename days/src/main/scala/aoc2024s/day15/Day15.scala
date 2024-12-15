@@ -1,7 +1,8 @@
 
 package aoc2024s.day15;
 
-import utils.IO;
+import utils.IO
+
 import scala.jdk.CollectionConverters.*
 
 object Day15 {
@@ -11,15 +12,25 @@ object Day15 {
     case Empty extends Content('.')
     case Robot extends Content('@')
     case Wall extends Content('#')
+    case BoxLeft extends Content('[')
+    case BoxRight extends Content(']')
+
+    def other: Movement = this match {
+      case BoxLeft => Movement.Right
+      case BoxRight => Movement.Left
+      case _ => sys.error("Only big boxes form parallel pairs")
+    }
 
     override def toString: String = char.toString
   }
 
-  enum Movement(val char: Char) extends (Position => Position) {
-    private case Up extends Movement('^')
-    private case Down extends Movement('v')
-    private case Left extends Movement('<')
-    private case Right extends Movement('>')
+  type Step = Position => Position
+
+  enum Movement(val char: Char) {
+    case Up extends Movement('^')
+    case Down extends Movement('v')
+    case Left extends Movement('<')
+    case Right extends Movement('>')
 
     def apply(position: Position): Position = this match {
       case Up => Position(position.x, position.y - 1)
@@ -28,10 +39,19 @@ object Day15 {
       case Right => Position(position.x + 1, position.y)
     }
 
+    def twice(position: Position): Position = this (this (position))
+
+    def opposite: Movement = this match {
+      case Up => Down
+      case Down => Up
+      case Left => Right
+      case Right => Left
+    }
+
     override def toString: String = char.toString
   }
 
-  case class Position(x: Int, y: Int) extends (Movement => Position) {
+  case class Position(x: Int, y: Int) {
     def apply(movement: Movement): Position = {
       movement(this)
     }
@@ -43,11 +63,11 @@ object Day15 {
     override def toString: String = s"($x, $y)"
   }
 
-  class Warehouse(grid: IArray[IArray[Content]]) {
+  class Warehouse(val grid: IArray[IArray[Content]]) {
     val height: Int = grid.length
     val width: Int = grid(0).length
 
-    def apply(position: Position): Content = {
+    def at(position: Position): Content = {
       grid(position.y)(position.x)
     }
 
@@ -66,61 +86,116 @@ object Day15 {
       robots.head
     }
 
-    def part1: Int = {
+    def part(isBig: Boolean): Int = {
       (for {
         y <- 0 until height
         x <- 0 until width
-        if grid(y)(x) == Content.Box
+        if grid(y)(x) == (if isBig then Content.BoxLeft else Content.Box)
         gps = Position(x, y).gps
       } yield gps).sum
     }
 
-    def tryMove(from: Position, movement: Movement): Option[(Warehouse, Position)] = {
-      assert(this (from) == Content.Robot)
-      val to = movement(from)
-      this (to) match {
+    def tryMove(robot: Position, movement: Movement): Option[(Warehouse, Position)] = {
+      assert(at(robot) == Content.Robot)
+      val newRobot = movement(robot)
+      at(newRobot) match {
         case Content.Wall => None
         case Content.Empty =>
-          // robot moves to empty space
-          robotMovesToEmptySpace(from, to).map((_, to))
+          Some(moveRobot(robot, newRobot), newRobot)
         case Content.Box =>
-          robotMovesToBox(from, to, movement).map((_, to))
-        case _ => throw new IllegalArgumentException("Invalid move")
+          tryMoveBox(robot, newRobot, movement).map((_, newRobot))
+        case Content.BoxLeft =>
+          tryMoveBigBoxLeft(robot, newRobot, movement).map((_, newRobot))
+        case Content.BoxRight =>
+          tryMoveBigBoxRight(robot, newRobot, movement).map((_, newRobot))
+        case _ => sys.error("Invalid move")
       }
     }
 
-    private def robotMovesToEmptySpace(robot: Position, to: Position): Option[Warehouse] = {
-      assert(this (robot) == Content.Robot && this (to) == Content.Empty)
-      Some {
-        updated(robot, Content.Empty)
-          .updated(to, Content.Robot)
-      }
+    private def moveRobot(robot: Position, to: Position): Warehouse = {
+      assert(at(robot) == Content.Robot && at(to) == Content.Empty)
+      updated(robot, Content.Empty)
+        .updated(to, Content.Robot)
     }
 
-    private def robotMovesToBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
-      assert(this (robot) == Content.Robot && this (boxStart) == Content.Box)
-      val (boxEnd, boxSize) = analyseBox(boxStart, movement)
-      assert(this (boxEnd) == Content.Box)
-      val afterBox = movement(boxEnd)
-      this (afterBox) match {
+    private def tryMoveBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
+      assert(at(robot) == Content.Robot && at(boxStart) == Content.Box)
+      val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) == at(boxStart)).toList
+      val afterBox = movement(trace.last)
+      at(afterBox) match {
         case Content.Empty =>
-          // box moves to empty space
-          boxMovesToEmptySpace(robot, boxStart, afterBox)
+          Some {
+            rotate(robot :: trace ::: List(afterBox))
+          }
         case _ => None
       }
     }
 
-    private def analyseBox(position: Position, movement: Movement): (Position, Int) = {
-      val trace = LazyList.iterate(position)(movement).takeWhile(p => this (p) == Content.Box)
-      (trace.last, trace.size)
+    private def rotate(trace: List[Position]): Warehouse = {
+//      assert(at(trace.head) == Content.Robot || at(trace.head) == Content.Empty)
+//      assert(at(trace.last) == Content.Empty)
+//      assert(trace.tail.init.forall(p => at(p) == Content.Box || at(p) == Content.BoxLeft || at(p) == Content.BoxRight))
+      val contents = trace.map(p => at(p))
+      val newContents = Content.Empty +: contents.init
+      val updates = trace.zip(newContents)
+      updates.foldLeft(this) {
+        case (warehouse, (position, contents)) =>
+          warehouse.updated(position, contents)
+
+      }
     }
 
-    private def boxMovesToEmptySpace(robot: Position, boxStart: Position, afterBox: Position): Option[Warehouse] = {
-      assert(this(robot)== Content.Robot &&  this(boxStart) == Content.Box && this (afterBox) == Content.Empty)
-      Some {
-        updated(robot, Content.Empty)
-          .updated(boxStart, Content.Robot)
-          .updated(afterBox, Content.Box)
+    private def tryMoveBigBoxLeft(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
+      assert(at(robot) == Content.Robot && at(boxStart) == Content.BoxLeft)
+      movement match {
+        case Movement.Left => sys.error("Cannot move box left moving to the left")
+        case Movement.Right =>
+          tryMoveHorizontallyBigBox(robot, boxStart, movement)
+        case _ =>
+          tryMoveVerticallyBigBox(robot, boxStart, movement)
+      }
+    }
+
+    private def tryMoveBigBoxRight(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
+      assert(at(robot) == Content.Robot && at(boxStart) == Content.BoxRight)
+      movement match {
+        case Movement.Right => sys.error("Cannot move box right moving to the right")
+        case Movement.Left =>
+          tryMoveHorizontallyBigBox(robot, boxStart, movement)
+        case _ =>
+          tryMoveVerticallyBigBox(robot, boxStart, movement)
+      }
+    }
+
+    private def tryMoveHorizontallyBigBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
+      val halfTrace = Iterator.iterate(boxStart)(movement.twice).takeWhile(p => at(p) == at(boxStart)).toList
+      println(s"halfTrace = $halfTrace")
+      val afterBox = movement.twice(halfTrace.last)
+      println(s"afterBox = $afterBox")
+      at(afterBox) match {
+        case Content.Empty => {
+          val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) != Content.Empty).toList
+          println(s"trace = $trace")
+          Some(rotate(robot :: trace ::: List(afterBox)))
+        }
+        case _ => None
+      }
+    }
+
+    private def tryMoveVerticallyBigBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
+      val otherRobot = at(boxStart).other(robot)
+      val otherBoxStart = at(boxStart).other(boxStart)
+      val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) == at(boxStart)).toList
+      val otherTrace = Iterator.iterate(otherBoxStart)(movement.apply).takeWhile(p => at(p) == at(otherBoxStart)).toList
+      val afterBox = movement(trace.last)
+      val afterOtherBox = movement(otherTrace.last)
+      (at(afterBox), at(afterOtherBox)) match {
+        case (Content.Empty, Content.Empty) =>
+          Some {
+            rotate(robot :: trace ::: List(afterBox))
+              .rotate(otherTrace ::: List(afterOtherBox))
+          }
+        case _ => None
       }
     }
 
@@ -141,11 +216,20 @@ object Day15 {
     }
 
     def run(plan: RobotPlan): State = {
-      plan.movement.foldLeft(this)((status, movement) => status.step(movement))
+      plan.movement.foldLeft(this) { (state, movement) =>
+        println(s"Step $movement")
+        val after = state.step(movement)
+        println(after.warehouse)
+        after
+      }
     }
 
     def part1: Int = {
-      warehouse.part1
+      warehouse.part(isBig = false)
+    }
+
+    def part2: Int = {
+      warehouse.part(isBig = true)
     }
   }
 
@@ -188,14 +272,38 @@ object Day15 {
     val (warehouse, plan) = Parser.parse(data)
     val robot = warehouse.findRobot()
     val initial = State(warehouse, robot)
-    println(warehouse)
-    println(robot)
-    println(plan)
     initial.run(plan).part1
   }
 
+  object WarehouseUpgrader {
+    def upgrade(warehouse: Warehouse): Warehouse = {
+      Warehouse {
+        IArray.from(warehouse.grid.map(upgradeRow))
+      }
+    }
+
+    private def upgradeRow(row: IArray[Content]): IArray[Content] = {
+      IArray.from(row.flatMap(upgradeContent))
+    }
+
+    private def upgradeContent(content: Content): Seq[Content] = {
+      content match {
+        case Content.Wall => Seq(Content.Wall, Content.Wall)
+        case Content.Box => Seq(Content.BoxLeft, Content.BoxRight)
+        case Content.Empty => Seq(Content.Empty, Content.Empty)
+        case Content.Robot => Seq(Content.Robot, Content.Empty)
+        case _ => sys.error("Only part 1 grids are updatable")
+      }
+    }
+  }
+
   def part2(data: List[String]): Long = {
-    throw new UnsupportedOperationException("part2");
+    val (warehouse, plan) = Parser.parse(data)
+    val upgraded = WarehouseUpgrader.upgrade(warehouse)
+    val robot = upgraded.findRobot()
+    val initial = State(upgraded, robot)
+    println(upgraded)
+    initial.run(plan).part2
   }
 
   @main def main15(): Unit = {

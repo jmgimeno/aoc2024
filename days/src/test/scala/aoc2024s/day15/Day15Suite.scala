@@ -42,6 +42,17 @@ class Day15Suite extends FunSuite {
       |^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
       |v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^""".stripMargin
 
+  val smallest: String =
+    """#######
+      |#...#.#
+      |#.....#
+      |#..OO@#
+      |#..O..#
+      |#.....#
+      |#######
+      |
+      |<vv<<^^<<^^""".stripMargin
+
   test("part1 - smaller data") {
     val data = IO.splitLinesAsList(smaller).asScala.toList
     assertEquals(Day15.part1(data), 2028L)
@@ -57,9 +68,14 @@ class Day15Suite extends FunSuite {
     assertEquals(Day15.part1(data), 1406628L)
   }
 
-  test("part2 - example data") {
-    val data = IO.splitLinesAsList(smaller).asScala.toList
-    assertEquals(Day15.part2(data), -1L)
+  test("part2 - smallest data") {
+    val data = IO.splitLinesAsList(smallest).asScala.toList
+    assertEquals(Day15.part2(data), 618L)
+  }
+
+  test("part2 - larger data") {
+    val data = IO.splitLinesAsList(larger).asScala.toList
+    assertEquals(Day15.part2(data), 9021L)
   }
 
   test("part2 - input data") {
