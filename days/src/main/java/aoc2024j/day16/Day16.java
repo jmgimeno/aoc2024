@@ -151,6 +151,7 @@ public class Day16 {
             this.heuristic =
                     r -> {
                         int d = r.position.manhattanDistance(maze.end);
+                        if (d == 0) return 0;
                         // Reindeer is always at the left and down the target so it must turn to face the target
                         if (r.position.x != maze.end.x && r.position.y != maze.end.y) {
                             if (r.direction == Direction.North || r.direction == Direction.East) {
@@ -173,58 +174,86 @@ public class Day16 {
                         }
                         return d;
                     };
-            
+
             fScore = new Score();
             gScore = new Score();
         }
 
-        Optional<Node> solve() {
+        List<Node> bestPaths(boolean onlyOne) {
+            var bestPaths = new ArrayList<Node>();
+            int bestScore = Integer.MAX_VALUE;
+
             var initial = new Reindeer(maze.start, Direction.East);
             gScore.set(initial, 0);
             fScore.set(initial, heuristic.apply(initial));
 
             var newNode = new Node(initial, fScore.get(initial), null);
             openQueue.add(newNode);
-            openSet.add(newNode);
 
             while (!openQueue.isEmpty()) {
                 var current = openQueue.poll();
-                openSet.remove(current.reindeer);
-                
+
                 if (current.reindeer.position.equals(maze.end)) {
-                    System.out.println("gScore: " + gScore.get(current.reindeer));
-                    System.out.println("next in queue: " + openQueue.peek());
-                    return Optional.of(current);
+                    int score = gScore.get(current.reindeer);
+                    if (score <= bestScore) {
+                        bestScore = score;
+                        bestPaths.add(current);
+                        if (onlyOne) {
+                            return bestPaths;
+                        }
+                    } else {
+                        return bestPaths;
+                    }
                 }
 
                 for (var expansion : maze.validExpansions(current.reindeer)) {
                     var neighbour = expansion.reindeer;
                     var move = expansion.move;
                     var tentativeGScore = gScore.get(current.reindeer) + move.cost();
-                    if (tentativeGScore < gScore.get(neighbour)) {
+                    // lower than or equal to get all solutions
+                    if (tentativeGScore <= gScore.get(neighbour)) {
                         gScore.set(neighbour, tentativeGScore);
                         fScore.set(neighbour, tentativeGScore + heuristic.apply(neighbour));
                         var neighbourNode = new Node(neighbour, fScore.get(neighbour), current);
-                        if (!openSet.contains(neighbourNode)) {
-                            openQueue.add(neighbourNode);
-                            openSet.add(neighbourNode);
-                        }
+                        // h is admisible so no need to check if it's already in the open set
+                        openQueue.add(neighbourNode);
                     }
                 }
             }
-            return Optional.empty();
+            return bestPaths;
+        }
+
+        int countPositions(List<Node> paths) {
+            var nodes = new HashSet<Position>();
+            for (var path : paths) {
+                var node = path;
+                while (node != null) {
+                    nodes.add(node.reindeer.position);
+                    node = node.cameFrom;
+                }
+            }
+            return nodes.size();
+        }
+
+        int part1() {
+            return bestPaths(true).getFirst().fScore;
+        }
+
+        int part2() {
+            return countPositions(bestPaths(false));
         }
     }
 
     long part1(List<String> data) {
         var maze = new Maze(data);
         var aStar = new AStar(maze);
-        var solution = aStar.solve();
-        return solution.map(n -> aStar.gScore.get(n.reindeer)).orElseThrow();
+        return aStar.part1();
     }
 
     long part2(List<String> data) {
-        throw new UnsupportedOperationException("part2");
+        var maze = new Maze(data);
+        var aStar = new AStar(maze);
+        return aStar.part2();
     }
 
     public static void main() {

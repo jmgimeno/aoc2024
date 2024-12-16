@@ -74,16 +74,24 @@ class Day16Test {
     }
 
     @Test
-    @DisplayName("part2 - example data")
+    @DisplayName("part2 - example1 data")
     void test3_1() {
         var data = IO.splitLinesAsList(example1);
-        assertEquals(-1L, day16.part2(data));
+        assertEquals(45L, day16.part2(data));
+    }
+
+
+    @Test
+    @DisplayName("part2 - example2 data")
+    void test3_2() {
+        var data = IO.splitLinesAsList(example2);
+        assertEquals(64L, day16.part2(data));
     }
 
     @Test
     @DisplayName("part2 - input data")
     void test4() {
         var data = IO.getResourceAsList("aoc2024/day16.txt");
-        assertEquals(-1L, day16.part2(data));
+        assertEquals(463L, day16.part2(data));
     }
 }
