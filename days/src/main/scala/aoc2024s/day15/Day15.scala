@@ -18,6 +18,8 @@ object Day15 {
     override def toString: String = char.toString
   }
 
+  import Content.*
+
   type Step = Position => Position
 
   enum Direction(val char: Char) {
@@ -50,6 +52,8 @@ object Day15 {
     override def toString: String = char.toString
   }
 
+  import Direction.*
+
   case class Position(x: Int, y: Int) {
     def apply(movement: Direction): Position = {
       movement(this)
@@ -62,12 +66,29 @@ object Day15 {
     override def toString: String = s"($x, $y)"
   }
 
-  class Warehouse(val grid: IArray[IArray[Content]]) {
+  type Grid = IArray[IArray[Content]]
+
+  case class Update(position: Position, content: Content) {
+    def executeOn(grid: Grid): Grid = {
+      grid.updated(position.y, grid(position.y).updated(position.x, content))
+    }
+  }
+
+  class Warehouse(val grid: Grid) {
     val height: Int = grid.length
     val width: Int = grid(0).length
 
     def at(position: Position): Content = {
       grid(position.y)(position.x)
+    }
+
+    def execute(updates: List[Update]): Warehouse = {
+      Warehouse {
+        updates.foldLeft(grid) {
+          case (grid, update) =>
+            update.executeOn(grid)
+        }
+      }
     }
 
     private def updated(position: Position, content: Content): Warehouse = {
@@ -94,52 +115,79 @@ object Day15 {
       } yield gps).sum
     }
 
-    def tryMove(robot: Position, movement: Direction): Option[(Warehouse, Position)] = {
-      assert(at(robot) == Content.Robot)
-      val newRobot = movement(robot)
-      at(newRobot) match {
-        case Content.Wall => None
-        case Content.Empty =>
-          Some(moveRobot(robot, newRobot), newRobot)
-        case Content.Box =>
-          tryMoveBox(robot, newRobot, movement).map((_, newRobot))
-        case _ => sys.error("Invalid move")
+    def tryMoveNew(robot: Position, direction: Direction): Option[(Warehouse, Position)] = {
+      findUpdates(robot, direction).map { updates =>
+        val newWarehouse = execute(updates)
+        val newPosition = direction(robot)
+        (newWarehouse, newPosition)
       }
     }
 
-    private def moveRobot(robot: Position, to: Position): Warehouse = {
-      assert(at(robot) == Content.Robot && at(to) == Content.Empty)
-      updated(robot, Content.Empty)
-        .updated(to, Content.Robot)
-    }
-
-    private def tryMoveBox(robot: Position, boxStart: Position, movement: Direction): Option[Warehouse] = {
-      assert(at(robot) == Content.Robot && at(boxStart) == Content.Box)
-      val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) == at(boxStart)).toList
-      val afterBox = movement(trace.last)
-      at(afterBox) match {
-        case Content.Empty =>
-          Some {
-            rotate(robot :: trace ::: List(afterBox))
+    def findUpdates(robot: Position, direction: Direction): Option[List[Update]] = {
+      val trace = makeTrace(robot, direction)
+      val end = direction(trace.last)
+      println(s"Trace: ${trace.map(at).mkString} and end: ${at(end)}")
+      at(end) match {
+        case Wall =>
+          None
+        case Empty => {
+          direction match {
+            case Left | Right => {
+              rotateNew(trace ::: List(end))
+            }
+            case Up | Down => {
+              for {
+                centerUpdates <- rotateNew(trace ::: List(end))
+                boxLeft = trace.find(p => at(p) == BoxLeft)
+                leftUpdates <- expandNew(boxLeft, direction, Left)
+                boxRight = trace.find(p => at(p) == BoxRight)
+                rightUpdates <- expandNew(boxRight, direction, Right)
+              } yield centerUpdates ::: leftUpdates ::: rightUpdates
+            }
           }
-        case _ => None
+        }
+        case _ => sys.error("Unexpected content")
       }
     }
 
-    private def rotate(trace: List[Position]): Warehouse = {
-//      assert(at(trace.head) == Content.Robot || at(trace.head) == Content.Empty)
-//      assert(at(trace.last) == Content.Empty)
-//      assert(trace.tail.init.forall(p => at(p) == Content.Box || at(p) == Content.BoxLeft || at(p) == Content.BoxRight))
-      val contents = trace.map(p => at(p))
-      val newContents = Content.Empty +: contents.init
-      val updates = trace.zip(newContents)
-      updates.foldLeft(this) {
-        case (warehouse, (position, contents)) =>
-          warehouse.updated(position, contents)
-
+    def expandNew(box: Option[Position], forward: Direction, expansion: Direction): Option[List[Update]] = {
+      box match {
+        case Some(position) =>
+          val base = expansion(position)
+          println(s"Expanding $forward from $position (${at(position)}) at $base (${at(base)}) in direction $expansion with target ${at(position)}")
+          val trace = makeTrace(base, forward)
+          println(s"Trace: ${trace.map(at).mkString}")
+          if (trace.isEmpty) {
+            println(s"Empty trace with box at $position in direction $forward and expanding $expansion" )
+            None
+          } else {
+            val end = forward(trace.last)
+            at(end) match {
+              case Wall => None
+              case Empty =>
+                for {
+                  forwardUpdates <- rotateNew(trace ::: List(end))
+                  box = trace.find(p => at(p) == at(position))
+                  expansionUpdates <- expandNew(box, forward, expansion)
+                } yield forwardUpdates ::: expansionUpdates
+              case _ => sys.error("Unexpected content")
+            }
+          }
+        case None => Some(List())
       }
     }
 
+    private def makeTrace(base: Position, forward: Direction) = {
+      Iterator.iterate(base)(forward.apply).takeWhile(p => at(p) != Wall && at(p) != Empty).toList
+    }
+
+    def rotateNew(trace: List[Position]): Option[List[Update]] = {
+      Some {
+        val contents = trace.map(p => at(p))
+        val newContents = Content.Empty +: contents.init
+        trace.zip(newContents).map(Update.apply.tupled)
+      }
+    }
 
     override def toString: String = {
       grid.map(_.mkString).mkString("\n")
@@ -151,7 +199,7 @@ object Day15 {
   case class State(warehouse: Warehouse, robot: Position) {
 
     private def step(movement: Direction): State = {
-      warehouse.tryMove(robot, movement) match {
+      warehouse.tryMoveNew(robot, movement) match {
         case Some((newWarehouse, newRobot)) => State(newWarehouse, newRobot)
         case None => this
       }
