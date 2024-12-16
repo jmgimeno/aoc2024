@@ -15,22 +15,16 @@ object Day15 {
     case BoxLeft extends Content('[')
     case BoxRight extends Content(']')
 
-    def other: Movement = this match {
-      case BoxLeft => Movement.Right
-      case BoxRight => Movement.Left
-      case _ => sys.error("Only big boxes form parallel pairs")
-    }
-
     override def toString: String = char.toString
   }
 
   type Step = Position => Position
 
-  enum Movement(val char: Char) {
-    case Up extends Movement('^')
-    case Down extends Movement('v')
-    case Left extends Movement('<')
-    case Right extends Movement('>')
+  enum Direction(val char: Char) {
+    case Up extends Direction('^')
+    case Down extends Direction('v')
+    case Left extends Direction('<')
+    case Right extends Direction('>')
 
     def apply(position: Position): Position = this match {
       case Up => Position(position.x, position.y - 1)
@@ -39,20 +33,25 @@ object Day15 {
       case Right => Position(position.x + 1, position.y)
     }
 
-    def twice(position: Position): Position = this (this (position))
+    def clockWise: Direction = this match {
+      case Up => Right
+      case Down => Left
+      case Left => Up
+      case Right => Down
+    }
 
-    def opposite: Movement = this match {
-      case Up => Down
-      case Down => Up
-      case Left => Right
-      case Right => Left
+    def counterClockWise: Direction = this match {
+      case Up => Left
+      case Down => Right
+      case Left => Down
+      case Right => Up
     }
 
     override def toString: String = char.toString
   }
 
   case class Position(x: Int, y: Int) {
-    def apply(movement: Movement): Position = {
+    def apply(movement: Direction): Position = {
       movement(this)
     }
 
@@ -95,7 +94,7 @@ object Day15 {
       } yield gps).sum
     }
 
-    def tryMove(robot: Position, movement: Movement): Option[(Warehouse, Position)] = {
+    def tryMove(robot: Position, movement: Direction): Option[(Warehouse, Position)] = {
       assert(at(robot) == Content.Robot)
       val newRobot = movement(robot)
       at(newRobot) match {
@@ -104,10 +103,6 @@ object Day15 {
           Some(moveRobot(robot, newRobot), newRobot)
         case Content.Box =>
           tryMoveBox(robot, newRobot, movement).map((_, newRobot))
-        case Content.BoxLeft =>
-          tryMoveBigBoxLeft(robot, newRobot, movement).map((_, newRobot))
-        case Content.BoxRight =>
-          tryMoveBigBoxRight(robot, newRobot, movement).map((_, newRobot))
         case _ => sys.error("Invalid move")
       }
     }
@@ -118,7 +113,7 @@ object Day15 {
         .updated(to, Content.Robot)
     }
 
-    private def tryMoveBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
+    private def tryMoveBox(robot: Position, boxStart: Position, movement: Direction): Option[Warehouse] = {
       assert(at(robot) == Content.Robot && at(boxStart) == Content.Box)
       val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) == at(boxStart)).toList
       val afterBox = movement(trace.last)
@@ -145,70 +140,17 @@ object Day15 {
       }
     }
 
-    private def tryMoveBigBoxLeft(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
-      assert(at(robot) == Content.Robot && at(boxStart) == Content.BoxLeft)
-      movement match {
-        case Movement.Left => sys.error("Cannot move box left moving to the left")
-        case Movement.Right =>
-          tryMoveHorizontallyBigBox(robot, boxStart, movement)
-        case _ =>
-          tryMoveVerticallyBigBox(robot, boxStart, movement)
-      }
-    }
-
-    private def tryMoveBigBoxRight(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
-      assert(at(robot) == Content.Robot && at(boxStart) == Content.BoxRight)
-      movement match {
-        case Movement.Right => sys.error("Cannot move box right moving to the right")
-        case Movement.Left =>
-          tryMoveHorizontallyBigBox(robot, boxStart, movement)
-        case _ =>
-          tryMoveVerticallyBigBox(robot, boxStart, movement)
-      }
-    }
-
-    private def tryMoveHorizontallyBigBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
-      val halfTrace = Iterator.iterate(boxStart)(movement.twice).takeWhile(p => at(p) == at(boxStart)).toList
-      println(s"halfTrace = $halfTrace")
-      val afterBox = movement.twice(halfTrace.last)
-      println(s"afterBox = $afterBox")
-      at(afterBox) match {
-        case Content.Empty => {
-          val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) != Content.Empty).toList
-          println(s"trace = $trace")
-          Some(rotate(robot :: trace ::: List(afterBox)))
-        }
-        case _ => None
-      }
-    }
-
-    private def tryMoveVerticallyBigBox(robot: Position, boxStart: Position, movement: Movement): Option[Warehouse] = {
-      val otherRobot = at(boxStart).other(robot)
-      val otherBoxStart = at(boxStart).other(boxStart)
-      val trace = Iterator.iterate(boxStart)(movement.apply).takeWhile(p => at(p) == at(boxStart)).toList
-      val otherTrace = Iterator.iterate(otherBoxStart)(movement.apply).takeWhile(p => at(p) == at(otherBoxStart)).toList
-      val afterBox = movement(trace.last)
-      val afterOtherBox = movement(otherTrace.last)
-      (at(afterBox), at(afterOtherBox)) match {
-        case (Content.Empty, Content.Empty) =>
-          Some {
-            rotate(robot :: trace ::: List(afterBox))
-              .rotate(otherTrace ::: List(afterOtherBox))
-          }
-        case _ => None
-      }
-    }
 
     override def toString: String = {
       grid.map(_.mkString).mkString("\n")
     }
   }
 
-  case class RobotPlan(movement: List[Movement])
+  case class RobotPlan(movement: List[Direction])
 
   case class State(warehouse: Warehouse, robot: Position) {
 
-    private def step(movement: Movement): State = {
+    private def step(movement: Direction): State = {
       warehouse.tryMove(robot, movement) match {
         case Some((newWarehouse, newRobot)) => State(newWarehouse, newRobot)
         case None => this
@@ -217,10 +159,7 @@ object Day15 {
 
     def run(plan: RobotPlan): State = {
       plan.movement.foldLeft(this) { (state, movement) =>
-        println(s"Step $movement")
-        val after = state.step(movement)
-        println(after.warehouse)
-        after
+        state.step(movement)
       }
     }
 
@@ -259,12 +198,12 @@ object Day15 {
       }
     }
 
-    private def parsePlan(line: String): Seq[Movement] = {
+    private def parsePlan(line: String): Seq[Direction] = {
       line.map(parseMovement)
     }
 
-    private def parseMovement(char: Char): Movement = {
-      Movement.values.find(_.char == char).get
+    private def parseMovement(char: Char): Direction = {
+      Direction.values.find(_.char == char).get
     }
   }
 
@@ -275,8 +214,8 @@ object Day15 {
     initial.run(plan).part1
   }
 
-  object WarehouseUpgrader {
-    def upgrade(warehouse: Warehouse): Warehouse = {
+  private object Part2Transformer {
+    def transform(warehouse: Warehouse): Warehouse = {
       Warehouse {
         IArray.from(warehouse.grid.map(upgradeRow))
       }
@@ -299,10 +238,9 @@ object Day15 {
 
   def part2(data: List[String]): Long = {
     val (warehouse, plan) = Parser.parse(data)
-    val upgraded = WarehouseUpgrader.upgrade(warehouse)
-    val robot = upgraded.findRobot()
-    val initial = State(upgraded, robot)
-    println(upgraded)
+    val transformed = Part2Transformer.transform(warehouse)
+    val robot = transformed.findRobot()
+    val initial = State(transformed, robot)
     initial.run(plan).part2
   }
 
