@@ -14,8 +14,8 @@
 - Day12: Garden Groups
 - Day13: Claw Contraption
 - Day14: Restroom Redoubt
-- Day15: ???
-- Day16: ???
+- Day15: Warehouse Woes
+- Day16: Reindeer Maze
 - Day17: ???
 - Day18: ???
 - Day19: ???
