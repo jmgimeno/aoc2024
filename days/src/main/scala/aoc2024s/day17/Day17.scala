@@ -201,13 +201,24 @@ object Day17 {
     }
   }
 
-  private class FixPointFinder(computer: Computer, program: List[Int]) {
+  extension (output: List[Int])
+    def toBase8: Int = {
+      output.foldLeft(0) { (acc, n) => acc * 8 + n }
+    }
+
+  class FixPointFinder(computer: Computer, program: List[Int]) {
 
     private def nextMachine(n: Int): Computer = computer.copy(a = n)
 
     private def isFixedPoint(n: Int): Boolean =
       val machine = nextMachine(n)
       Executor.runLazy(machine, program) == program
+
+    def firstOfLength(target: Int): Int =
+      LazyList.from(0).dropWhile { n =>
+        val machine = nextMachine(n)
+        Executor.runLazy(machine, program).take(target).length < target
+      }.head
 
     def fixPoint: Int =
       @tailrec
@@ -216,6 +227,16 @@ object Day17 {
         else go(n + 1)
 
       go(0)
+
+    def fixPoint2: Int =
+      @tailrec
+      def go(n: Int): Int =
+        val machine = nextMachine(n)
+        val output = Executor.runEager(machine, program)
+        if output == program then n
+        else go(n + 1)
+
+      go(2 << 15)
   }
 
   def parse(data: List[String]): (Computer, List[Int]) = {
@@ -245,16 +266,28 @@ object Day17 {
 
   def part2(data: List[String]): Int = {
     val (computer, program) = parse(data)
-    FixPointFinder(computer, program).fixPoint
+    FixPointFinder(computer, program).fixPoint2
   }
 
   @main def explorePart2(): Unit = {
     val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
     val (computer, program) = parse(data)
-    for n <- 0 to 10000 do
+    for n <- 0 to 1_000 do
       val machine = computer.copy(a = n)
-      val output = Executor.runEager(machine, program).mkString(",")
-      println(s"n = $n -> output = $output")
+      val output = Executor.runEager(machine, program)
+      val asStr = output.mkString(",")
+      val asInt = output.toBase8
+      val asIntRev = output.reverse.toBase8
+      println(s"n = $n -> output = $asStr -> asInt = $asInt  -> asIntRev = $asIntRev")
+  }
+
+  @main def explorerLength(): Unit = {
+    val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
+    val (computer, program) = parse(data)
+    val finder = FixPointFinder(computer, program)
+    for len <- 0 to 7 do
+      val n = finder.firstOfLength(len)
+      println(s"len = $len -> n = $n ->")
   }
 
   @main def main17(): Unit = {
