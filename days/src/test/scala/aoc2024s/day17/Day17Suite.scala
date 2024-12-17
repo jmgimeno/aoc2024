@@ -27,11 +27,15 @@ class Day17Suite extends FunSuite {
   test("part1 - example data") {
     val data = IO.splitLinesAsList(part1).asScala.toList
     assertEquals(Day17.part1(data), "4,6,3,5,6,3,5,2,1,0")
+    assertEquals(Day17.part1Eager(data), "4,6,3,5,6,3,5,2,1,0")
+    assertEquals(Day17.part1Lazy(data), "4,6,3,5,6,3,5,2,1,0")
   }
 
   test("part1 - input data") {
     val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
     assertEquals(Day17.part1(data), "3,7,1,7,2,1,0,6,3")
+    assertEquals(Day17.part1Eager(data), "3,7,1,7,2,1,0,6,3")
+    assertEquals(Day17.part1Lazy(data), "3,7,1,7,2,1,0,6,3")
   }
 
   test("part2 - example data") {
