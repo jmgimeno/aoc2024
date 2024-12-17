@@ -18,10 +18,10 @@ object Day17 {
 
     private def combo(arg: Int): String = arg match {
       case 0 | 1 | 2 | 3 => literal(arg)
-      case 4 => "@a"
-      case 5 => "@b"
-      case 6 => "@c"
-      case 7 => sys.error("invalid combo")
+      case 4             => "@a"
+      case 5             => "@b"
+      case 6             => "@c"
+      case 7             => sys.error("invalid combo")
     }
 
     private def literal(arg: Int): String = s"#$arg"
@@ -39,28 +39,39 @@ object Day17 {
       }
 
     def disassemble(program: List[Int]): String =
-      program.zipWithIndex.grouped(2).toList.map {
-        case List((op, i), (arg, _)) => f"$i%2d : ${assembled(OpCode.fromOrdinal(op), arg)}"
-        case _ => sys.error("invalid program")
-      }.mkString("\n")
+      program.zipWithIndex
+        .grouped(2)
+        .toList
+        .map {
+          case List((op, i), (arg, _)) =>
+            f"$i%2d : ${assembled(OpCode.fromOrdinal(op), arg)}"
+          case _ => sys.error("invalid program")
+        }
+        .mkString("\n")
   }
 
-  case class Computer(a: Int, b: Int, c: Int, ip: Int, output: List[Int]) {
+  case class Computer(
+      a: BigInt,
+      b: BigInt,
+      c: BigInt,
+      ip: Int,
+      output: List[Int]
+  ) {
 
     assert(a >= 0 && b >= 0 && c >= 0)
 
     private def combo(operand: Int): Int = operand match {
       case 0 | 1 | 2 | 3 => operand
-      case 4 => a
-      case 5 => b
-      case 6 => c
-      case 7 => sys.error("invalid combo")
+      case 4             => a.toInt
+      case 5             => b.toInt
+      case 6             => c.toInt
+      case 7             => sys.error("invalid combo")
     }
 
     def execute(op: OpCode, operand: Int): Computer =
       op match {
         case ADV =>
-          copy(a = a >>> combo(operand), ip = ip + 2)
+          copy(a = a >> combo(operand).toInt, ip = ip + 2)
         case BXL =>
           copy(b = b ^ operand, ip = ip + 2)
         case BST =>
@@ -85,7 +96,7 @@ object Day17 {
 
     def run(computer: Computer, program: List[Int]): Computer = {
       @tailrec def go(
-        computer: Computer,
+          computer: Computer
       ): Computer = {
         if computer.ip >= program.length then computer
         else {
@@ -99,13 +110,14 @@ object Day17 {
       go(computer)
     }
 
-    private def combo(operand: Int, a: Int, b: Int, c: Int): Int = operand match {
-      case 0 | 1 | 2 | 3 => operand
-      case 4 => a
-      case 5 => b
-      case 6 => c
-      case 7 => sys.error("invalid combo")
-    }
+    private def combo(operand: Int, a: BigInt, b: BigInt, c: BigInt): Int =
+      operand match {
+        case 0 | 1 | 2 | 3 => operand
+        case 4             => a.toInt
+        case 5             => b.toInt
+        case 6             => c.toInt
+        case 7             => sys.error("invalid combo")
+      }
 
     def runEager(initial: Computer, program: List[Int]): List[Int] = {
       var a = initial.a
@@ -118,7 +130,7 @@ object Day17 {
         val operand = program(ip + 1)
         opCode match {
           case ADV => {
-            a = a >>> combo(operand, a, b, c)
+            a = a >> combo(operand, a, b, c)
             ip += 2
           }
           case BXL => {
@@ -153,17 +165,16 @@ object Day17 {
       output.toList
     }
 
-
     def runLazy(initial: Computer, program: List[Int]): LazyList[Int] = {
 
-      def go(a: Int, b: Int, c: Int, ip: Int): LazyList[Int] = {
+      def go(a: BigInt, b: BigInt, c: BigInt, ip: Int): LazyList[Int] = {
         if ip >= program.length then LazyList.empty
         else {
           val opCode = OpCode.fromOrdinal(program(ip))
           val operand = program(ip + 1)
           opCode match {
             case ADV => {
-              val a1 = a >>> combo(operand, a, b, c)
+              val a1 = a >> combo(operand, a, b, c)
               go(a1, b, c, ip + 2)
             }
             case BXL => {
@@ -208,25 +219,28 @@ object Day17 {
 
   class FixPointFinder(computer: Computer, program: List[Int]) {
 
-    private def nextMachine(n: Int): Computer = computer.copy(a = n)
+    private def nextMachine(n: BigInt): Computer = computer.copy(a = n)
 
-    private def isFixedPoint(n: Int): Boolean =
+    private def isFixedPoint(n: BigInt): Boolean =
       val machine = nextMachine(n)
       Executor.runLazy(machine, program) == program
 
     def firstOfLength(target: Int): Int =
-      LazyList.from(0).dropWhile { n =>
-        val machine = nextMachine(n)
-        Executor.runLazy(machine, program).take(target).length < target
-      }.head
+      LazyList
+        .from(0)
+        .dropWhile { n =>
+          val machine = nextMachine(n)
+          Executor.runLazy(machine, program).take(target).length < target
+        }
+        .head
 
-    def fixPoint: Int =
+    def fixPoint: BigInt =
       @tailrec
-      def go(n: Int): Int =
+      def go(n: BigInt): BigInt =
         if isFixedPoint(n) then n
         else go(n + 1)
 
-      go(0)
+      go(BigInt(0))
 
     def fixPoint2: Int =
       @tailrec
@@ -253,7 +267,6 @@ object Day17 {
     Executor.run(computer, program).output.mkString(",")
   }
 
-
   def part1Eager(data: List[String]): String = {
     val (computer, program) = parse(data)
     Executor.runEager(computer, program).mkString(",")
@@ -278,7 +291,9 @@ object Day17 {
       val asStr = output.mkString(",")
       val asInt = output.toBase8
       val asIntRev = output.reverse.toBase8
-      println(s"n = $n -> output = $asStr -> asInt = $asInt  -> asIntRev = $asIntRev")
+      println(
+        s"n = $n -> output = $asStr -> asInt = $asInt  -> asIntRev = $asIntRev"
+      )
   }
 
   @main def explorerLength(): Unit = {
@@ -290,6 +305,16 @@ object Day17 {
       println(s"len = $len -> n = $n ->")
   }
 
+  @main def explorePart2BI(): Unit = {
+    val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
+    val (computer, program) = parse(data)
+    val machine = computer.copy(a = BigInt(1) << 45)
+    val output = Executor.runEager(machine, program)
+    val asStr = output.mkString(",")
+    println(
+      s"output = $asStr"
+    )
+  }
   @main def main17(): Unit = {
     val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
     val part1 = Day17.part1(data)

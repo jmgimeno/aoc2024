@@ -43,7 +43,8 @@ class Day17Suite extends FunSuite {
     assertEquals(Day17.part2(data), 117440)
   }
 
-  test("part2 - input data") {
+
+  test("part2 - input data".ignore) {
     val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
     assertEquals(Day17.part2(data), -1)
   }
@@ -52,7 +53,7 @@ class Day17Suite extends FunSuite {
     val machine = Computer(0, 0, 9, 0, List.empty)
     val program = List(2, 6)
     val result = Executor.run(machine, program)
-    assertEquals(result.b, 1)
+    assertEquals(result.b.toInt, 1)
   }
 
   test("If register A contains 10, the program 5,0,5,1,5,4 would output 0,1,2.") {
@@ -67,21 +68,21 @@ class Day17Suite extends FunSuite {
     val program = List(0, 1, 5, 4, 3, 0)
     val result = Executor.run(machine, program)
     assertEquals(result.output, List(4, 2, 5, 6, 7, 7, 7, 7, 3, 1, 0))
-    assertEquals(result.a, 0)
+    assertEquals(result.a.toInt, 0)
   }
 
   test("If register B contains 29, the program 1,7 would set register B to 26.") {
     val machine = Computer(0, 29, 0, 0, List.empty)
     val program = List(1, 7)
     val result = Executor.run(machine, program)
-    assertEquals(result.b, 26)
+    assertEquals(result.b.toInt, 26)
   }
 
   test("If register B contains 2024 and register C contains 43690, the program 4,0 would set register B to 44354.") {
     val machine = Computer(0, 2024, 43690, 0, List.empty)
     val program = List(4, 0)
     val result = Executor.run(machine, program)
-    assertEquals(result.b, 44354)
+    assertEquals(result.b.toInt, 44354)
   }
 
   test("part 1 - on example2") {
