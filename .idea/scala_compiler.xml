@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ScalaCompilerConfiguration">
-    <profile name="sbt 1" modules="aoc2024,aoc2024.days2024,aoc2024.meta2024,aoc2024_5745" />
+    <option name="incrementalityType" value="IDEA" />
+    <profile name="sbt 1" modules="aoc2024,aoc2024.days2024,aoc2024.meta2024,aoc2024_7508" />
   </component>
 </project>

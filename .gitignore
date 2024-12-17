@@ -1,6 +1,13 @@
 ### Advent of Code template
 /days/src/main/resources/
 
+### Metals
+
+.metals/
+.bloop/
+.ammonite/
+metals.sbt
+
 ### BSP
 .bsp/
 
