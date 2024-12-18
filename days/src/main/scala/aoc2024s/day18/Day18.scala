@@ -2,6 +2,7 @@ package aoc2024s.day18
 
 import utils.IO
 
+import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
 import scala.collection.mutable
 
@@ -121,14 +122,17 @@ object Day18 {
       private val values =
         Array.fill(maxCoordinates + 1, maxCoordinates + 1)(Int.MaxValue)
       def apply(position: Position): Int = values(position.y)(position.x)
-      def update(position: Position, value: Int): Unit = values(position.y)(position.x) = value
+      def update(position: Position, value: Int): Unit =
+        values(position.y)(position.x) = value
     }
 
-    def bestPath(start: Position, end: Position): List[Position] = {
+    def bestPath: List[Position] = {
+      val start = Position(0, 0)
+      val end = Position(memSpace.maxCoordinate, memSpace.maxCoordinate)
       // We use A* using manhattan as heuristic
       val f = Score(memSpace.maxCoordinate)
       val g = Score(memSpace.maxCoordinate)
-      //val h = end.manhattanDistance
+      // val h = end.manhattanDistance
       val h = (p: Position) => 0 // BFS
       f(start) = h(start)
       g(start) = 0
@@ -149,7 +153,36 @@ object Day18 {
       }
       List.empty
     }
+  }
 
+  private class PathCloser(incoming: List[Position], maxCoordinate: Int) {
+
+    private def connected(n: Int): Boolean = {
+      val memSpace = new MemorySpace(maxCoordinate, incoming.take(n))
+      val bestPath = PathFinder(memSpace).bestPath
+      bestPath.nonEmpty
+    }
+
+    @tailrec
+    private def findFirstPosition(
+        begin: Int,
+        end: Int
+    ): Int = {
+      if begin == end then begin
+      else {
+        val mid = begin + (end - begin) / 2
+        if connected(mid) then {
+          findFirstPosition(mid + 1, end)
+        } else {
+          findFirstPosition(begin, mid)
+        }
+      }
+    }
+
+    def findFirstPosition: Position = {
+      val i = findFirstPosition(0, incoming.length + 1)
+      incoming(i - 1)
+    }
   }
 
   def part1(maxCoordinate: Int, numBytes: Int, data: List[String]): Int = {
@@ -157,19 +190,20 @@ object Day18 {
     val memSpace = new MemorySpace(maxCoordinate, incoming)
     val start = Position(0, 0)
     val end = Position(maxCoordinate, maxCoordinate)
-    val bestPath = PathFinder(memSpace).bestPath(start, end)
+    val bestPath = PathFinder(memSpace).bestPath
     bestPath.length - 1
   }
 
-  def part2(data: List[String]): Position = {
-    ??? // TODO
+  def part2(maxCoordinate: Int, data: List[String]): Position = {
+    val incoming = Parser.parse(data)
+    PathCloser(incoming, maxCoordinate).findFirstPosition
   }
 
   @main def main18(): Unit = {
     val data = IO.getResourceAsList("aoc2024/day18.txt").asScala.toList
     val part1 = Day18.part1(70, 1024, data)
     println(s"part1 = $part1")
-    val part2 = Day18.part2(data)
+    val part2 = Day18.part2(70, data)
     println(s"part2 = $part2")
   }
 }

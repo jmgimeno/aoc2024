@@ -1,4 +1,3 @@
-
 package aoc2024s.day18
 
 import aoc2024s.day18.Day18.Position
@@ -47,11 +46,11 @@ class Day18Suite extends FunSuite {
 
   test("part2 - example data") {
     val data = IO.splitLinesAsList(example).asScala.toList
-    assertEquals(Day18.part2(data), Position(6,1))
+    assertEquals(Day18.part2(6, data), Position(6, 1))
   }
 
   test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day18.txt").asScala.toList
-    assertEquals(Day18.part2(data), null)
+    assertEquals(Day18.part2(70, data), Position(20, 12))
   }
 }
