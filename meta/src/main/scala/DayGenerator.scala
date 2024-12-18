@@ -87,27 +87,27 @@ object DayGenerator {
   }
 
   def scalaProduction(day: Int): String = s"""
-    |package aoc2024s.day$day;
+    |package aoc2024s.day$day
     |
-    |import utils.IO;
+    |import utils.IO
     |import scala.jdk.CollectionConverters.*
     |
     |object Day$day {
     |
     |  def part1(data: List[String]): Long = {
-    |    throw new UnsupportedOperationException("part1");
+    |    ??? // TODO
     |  }
     |
     |  def part2(data: List[String]): Long = {
-    |    throw new UnsupportedOperationException("part2");
+    |    ??? // TODO
     |  }
     |
     |  @main def main$day(): Unit = {
-    |    val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList;
-    |    val part1 = Day$day.part1(data);
-    |    println(s"part1 = $$part1");
-    |    val part2 = Day$day.part2(data);
-    |    println(s"part2 = $$part2");
+    |    val data = IO.getResourceAsList("aoc2024/day$day.txt").asScala.toList
+    |    val part1 = Day$day.part1(data)
+    |    println(s"part1 = $$part1")
+    |    val part2 = Day$day.part2(data)
+    |    println(s"part2 = $$part2")
     |  }
     |}""".stripMargin
 
