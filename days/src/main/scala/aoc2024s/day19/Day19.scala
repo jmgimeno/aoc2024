@@ -54,13 +54,24 @@ object Day19 {
       }
     }
 
-    def countTerminals(trie: Trie): Int =
+    def countTerminals(trie: Trie): Int = {
+      // root is not counted
       trie match {
         case Empty => 0
         case Node(children, isTerminal) =>
           val terminals = if isTerminal then 1 else 0
           terminals + children.values.map(countTerminals).sum
       }
+    }
+
+    def countNodes(trie: Trie): Int = {
+      // root is not counted
+      trie match {
+        case Empty => 0
+        case Node(children, _) =>
+          1 + children.values.map(countNodes).sum
+      }
+    }
   }
 
   object Parser {
@@ -82,18 +93,21 @@ object Day19 {
       }
 
     def countPossible: Int = {
-      val explored = mutable.Set.empty[List[Node]]
-      val stack = mutable.Stack(List(trie.asInstanceOf[Node]))
+      val explored = mutable.Set.empty[Trie]
+      val stack = mutable.Stack(trie.asInstanceOf[Node])
+      val possibles = mutable.Set.empty[Trie]
       while stack.nonEmpty do {
         val current = stack.pop()
+        if current.isTerminal then possibles += current
         if !explored.contains(current) then {
           explored += current
-          neighbours(current.head).foreach { neighbour =>
-            stack.push(neighbour :: current)
+          val next = neighbours(current)
+          next.foreach { neighbour =>
+            stack.push(neighbour)
           }
         }
       }
-      explored.size
+      possibles.size
     }
   }
 
