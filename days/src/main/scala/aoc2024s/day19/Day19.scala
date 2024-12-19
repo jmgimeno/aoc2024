@@ -1,6 +1,5 @@
 package aoc2024s.day19
 
-import aoc2024s.day19.Day19.Trie.{Node, go}
 import utils.IO
 
 import scala.annotation.tailrec
@@ -13,63 +12,83 @@ object Day19 {
     case B, U, R, G, W
   }
 
-  enum Trie {
-    case Empty
-    case Node(children: Map[Stripe, Trie], isTerminal: Boolean = false)
-  }
-
   type Pattern = List[Stripe]
+
   type Design = List[Stripe]
+
+  class Trie {
+
+    import Trie.*
+
+    var root = new Node
+
+    def insert(path: List[Stripe]): Unit = {
+      @tailrec
+      def go(path: List[Stripe], node: Node): Unit = {
+        path match {
+          case Nil => node.isTerminal = true
+          case s :: ss => {
+            if (node.children(s.ordinal) == null) then {
+              node.children(s.ordinal) = new Node
+            }
+            go(ss, node.children(s.ordinal))
+          }
+        }
+      }
+      go(path, root)
+    }
+
+    def find(path: List[Stripe]): Option[Node] = {
+      root.find(path)
+    }
+  }
 
   object Trie {
 
-    private val noChildren: Map[Stripe, Trie] =
-      Map.WithDefault(Map.empty, _ => Trie.Empty)
+    class Node {
+      val children: Array[Node] = Array.fill(Stripe.values.length)(null)
+      var isTerminal: Boolean = false
 
-    private val emptyNode = Node(noChildren)
-
-    def insert(trie: Trie, path: Design): Trie = {
-      (trie, path) match {
-        case (Empty, Nil) =>
-          Node(noChildren, true)
-        case (Empty, s :: ss) =>
-          Node(noChildren.updated(s, insert(emptyNode, ss)), false)
-        case (node @ Node(_, _), Nil) =>
-          node.copy(isTerminal = true)
-        case (node @ Node(children, _), s :: ss) =>
-          node.copy(children = children.updated(s, insert(children(s), ss)))
+      def find(path: Pattern): Option[Node] = {
+        path match {
+          case Nil                                    => Some(this)
+          case s :: ss if children(s.ordinal) == null => None
+          case s :: ss => children(s.ordinal).find(ss)
+        }
       }
     }
 
-    @tailrec
-    def go(start: Trie, path: Pattern): Option[Node] = {
-      (start, path) match {
-        case (Empty, _) => None
-        case (node @ Node(_, _), Nil) => Some(node)
-        case (Node(children, _), s :: ss) => go(children(s), ss)
-      }
+    def from(patterns: List[List[Stripe]]): Trie = {
+      val trie = new Trie
+      patterns.foreach(pattern => trie.insert(pattern))
+      trie
     }
 
-    def from(designs: List[Design]): Trie = {
-      designs.foldLeft(Empty) { (trie, design) =>
-        insert(trie, design)
+    class Counter(trie: Trie, patterns: List[Pattern]) {
+      private def expand(node: Node): List[Node] = {
+        patterns.flatMap {
+          node.find
+        }
       }
-    }
 
-    def countTerminals(trie: Trie): Int = {
-      trie match {
-        case Empty => 0
-        case Node(children, isTerminal) =>
-          val terminals = if isTerminal then 1 else 0
-          terminals + children.values.map(countTerminals).sum
-      }
-    }
-
-    def countNodes(trie: Trie): Int = {
-      trie match {
-        case Empty => 0
-        case Node(children, _) =>
-          1 + children.values.map(countNodes).sum
+      def countPossible: Int = {
+        val start = trie.root
+        val explored = mutable.Set.empty[Node]
+        val stack = mutable.Stack(start)
+        val possibles = mutable.Set.empty[Node]
+        while stack.nonEmpty do {
+          val current = stack.pop()
+          if !explored.contains(current) then {
+            explored += current
+            if current.isTerminal then {
+              possibles += current
+            }
+            expand(current).foreach { neighbour =>
+              stack.push(neighbour)
+            }
+          }
+        }
+        possibles.size
       }
     }
   }
@@ -85,39 +104,13 @@ object Day19 {
       line.toCharArray.map(c => Stripe.valueOf(c.toUpper.toString)).toList
   }
 
-  class Counter(trie: Trie, patterns: List[Pattern]) {
-
-    private def neighbours(node: Trie) : List[Node] =
-      patterns.flatMap { pattern =>
-        go(node, pattern)
-      }
-
-    def countPossible: Int = {
-      val start = trie.asInstanceOf[Node]
-      val explored = mutable.Set.empty[Node]
-      val stack = mutable.Stack(start)
-      val possibles = mutable.Set.empty[Node]
-      while stack.nonEmpty do {
-        val current = stack.pop()
-        if !explored.contains(current) then {
-          explored += current
-          if current.isTerminal then possibles += current
-          neighbours(current).foreach { neighbour =>
-            stack.push(neighbour)
-          }
-        }
-      }
-      possibles.size
-    }
-  }
-
-  def part1(data: List[String]): Long = {
+  def part1(data: List[String]): Int = {
     val (patterns, designs) = Parser.parse(data)
     val trie = Trie.from(designs)
-    Counter(trie, patterns).countPossible
+    Trie.Counter(trie, patterns).countPossible
   }
 
-  def part2(data: List[String]): Long = {
+  def part2(data: List[String]): Int = {
     ??? // TODO
   }
 
