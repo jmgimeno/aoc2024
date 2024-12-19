@@ -65,12 +65,19 @@ object Day19 {
     }
 
     class Counter(trie: Trie, patterns: List[Pattern]) {
+
       private def expand(node: Node): List[Node] = {
         patterns.flatMap {
           node.find
         }
       }
 
+      private def expand2(node: Node): List[(Node, Pattern)] = {
+        patterns.flatMap { pattern =>
+          node.find(pattern).map(_ -> pattern)
+        }
+
+      }
       def countPossible: Int = {
         val start = trie.root
         val explored = mutable.Set.empty[Node]
@@ -85,6 +92,27 @@ object Day19 {
             }
             expand(current).foreach { neighbour =>
               stack.push(neighbour)
+            }
+          }
+        }
+        possibles.size
+      }
+
+      def countPossible2: Int = {
+        case class State(node: Node, path: List[Pattern])
+        val start = State(trie.root, List.empty)
+        val explored = mutable.Set.empty[State]
+        val stack = mutable.Stack(start)
+        val possibles = mutable.Set.empty[List[Pattern]]
+        while stack.nonEmpty do {
+          val current = stack.pop()
+          if !explored.contains(current) then {
+            explored += current
+            if current.node.isTerminal then {
+              possibles += current.path
+            }
+            expand2(current.node).foreach { (neighbour, pattern) =>
+              stack.push(State(neighbour, pattern :: current.path))
             }
           }
         }
@@ -111,7 +139,9 @@ object Day19 {
   }
 
   def part2(data: List[String]): Int = {
-    ??? // TODO
+    val (patterns, designs) = Parser.parse(data)
+    val trie = Trie.from(designs)
+    Trie.Counter(trie, patterns).countPossible2
   }
 
   @main def main19(): Unit = {
