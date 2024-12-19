@@ -48,7 +48,7 @@ class Day19Suite extends FunSuite {
     assert {
       designs.forall { d =>
         println(d)
-        Trie.find(trie, d).isDefined
+        Trie.go(trie, d).isDefined
       }
     }
   }
@@ -60,7 +60,7 @@ class Day19Suite extends FunSuite {
     assert {
       designs.forall { d =>
         println(d)
-        Trie.find(trie, d).isDefined
+        Trie.go(trie, d).isDefined
       }
     }
   }
@@ -90,7 +90,7 @@ class Day19Suite extends FunSuite {
     assertEquals(trie, randomizedTrie)
   }
 
-  test("the example trie has 35 nodes ans 8 terminals") {
+  test("the example trie has 35 nodes and 8 terminals") {
     val data = IO.splitLinesAsList(example).asScala.toList
     val (_, designs) = Parser.parse(data)
     val trie = Trie.from(designs)
@@ -104,10 +104,9 @@ class Day19Suite extends FunSuite {
     val trie = Trie.from(List(pattern))
     assertEquals(countNodes(trie), 5) // Root is not counted !!
     assertEquals(countTerminals(trie), 1)
-    assert(Trie.find(trie, pattern).get.isTerminal)
-    assert(!Trie.find(trie, List(B, U, R)).get.isTerminal)
-    assert(Trie.find(trie, List(B, U, W)).isEmpty)
-    assert(Trie.find(trie, List(B, U, R, U)).isEmpty)
+    assert(Trie.go(trie, pattern).get.isTerminal)
+    assert(!Trie.go(trie, List(B, U, R)).get.isTerminal)
+    assert(Trie.go(trie, List(B, U, W)).isEmpty)
+    assert(Trie.go(trie, List(B, U, R, U)).isEmpty)
   }
-
 }
