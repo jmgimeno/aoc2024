@@ -5,7 +5,13 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.aoc2024-build.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.aoc2024-build.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.days2024.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.days2024.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.days2024.main.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.days2024.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.days2024.test.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.days2024.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.main.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.meta2024.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.meta2024.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.meta2024.main.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.meta2024.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.meta2024.test.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.meta2024.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/aoc2024.test.iml" filepath="$PROJECT_DIR$/.idea/modules/aoc2024.test.iml" />
     </modules>
   </component>
 </project>
