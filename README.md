@@ -20,8 +20,8 @@
 - Day18: RAM Run
 - Day19: Linen Layout
 - Day20: Race Condition
-- Day21: ???
-- Day22: ???
+- Day21: Keypad Conundrum
+- Day22: Monkey Market
 - Day23: ???
 - Day24: ???
 - Day25: ???
