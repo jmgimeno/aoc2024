@@ -6,8 +6,25 @@ import scala.jdk.CollectionConverters.*
 
 object Day22 {
 
+  private val MODULUS = 16777216L - 1L
+
+  def prune(n: Long): Long = {
+    n & MODULUS
+  }
+
+  def next(n: Long): Long = {
+    val step1 = prune((n << 6) ^ n)
+    val step2 = prune((step1 >> 5) ^ step1)
+    val step3 = prune((step2 << 11) ^ step2)
+    step3
+  }
+
+  def ith(n: Long, i: Int): Long = {
+    Iterator.iterate(n)(next).drop(i).next()
+  }
+
   def part1(data: List[String]): Long = {
-    ??? // TODO
+    data.map(line => ith(line.toLong, 2000)).sum
   }
 
   def part2(data: List[String]): Long = {
