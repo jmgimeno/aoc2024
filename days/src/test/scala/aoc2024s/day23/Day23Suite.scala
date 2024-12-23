@@ -57,6 +57,6 @@ class Day23Suite extends FunSuite {
 
   test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day23.txt").asScala.toList
-    assertEquals(Day23.part2(data), "")
+    assertEquals(Day23.part2(data), "ag,gh,hh,iv,jx,nq,oc,qm,rb,sm,vm,wu,zr")
   }
 }

@@ -63,7 +63,7 @@ object Day23 {
         } else {
           var pp = p
           var xx = x
-          for (v <- p) {
+          for (v <- p.toList) { // iterates quickly on the list
             val nv = edges(v).toSet
             bronKerbosch(r + v, pp.intersect(nv), xx.intersect(nv))
             pp -= v
