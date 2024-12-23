@@ -54,7 +54,7 @@ object Day23 {
       result.toList
     }
 
-    def maximalClique: Clique = {
+    def maximalCliques: List[Clique] = {
       val result = mutable.ArrayBuffer.empty[Clique]
 
       def bronKerbosch(r: Set[Int], p: Set[Int], x: Set[Int]): Unit = {
@@ -63,7 +63,7 @@ object Day23 {
         } else {
           var pp = p
           var xx = x
-          for (v <- p.toList) { // iterates quickly on the list
+          for (v <- p.toList.sorted) { // iterates quickly on the list and sorting seems to help
             val nv = edges(v).toSet
             bronKerbosch(r + v, pp.intersect(nv), xx.intersect(nv))
             pp -= v
@@ -72,7 +72,7 @@ object Day23 {
         }
       }
       bronKerbosch(Set.empty, id2name.keySet, Set.empty)
-      result.max
+      result.toList
     }
 
     override def toString: String = {
@@ -118,8 +118,8 @@ object Day23 {
 
   def part2(data: List[String]): String = {
     val graph = GraphParser(data).parse
-    val maxClique = graph.maximalClique
-    maxClique.password
+    val maxClique = graph.maximalCliques
+    maxClique.max.password
   }
 
   @main def main23(): Unit = {
