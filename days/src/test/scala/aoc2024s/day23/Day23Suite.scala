@@ -52,11 +52,11 @@ class Day23Suite extends FunSuite {
 
   test("part2 - example data") {
     val data = IO.splitLinesAsList(example).asScala.toList
-    assertEquals(Day23.part2(data), -1L)
+    assertEquals(Day23.part2(data), "co,de,ka,ta")
   }
 
   test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day23.txt").asScala.toList
-    assertEquals(Day23.part2(data), -1L)
+    assertEquals(Day23.part2(data), "")
   }
 }

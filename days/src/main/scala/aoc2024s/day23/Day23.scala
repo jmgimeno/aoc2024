@@ -19,6 +19,19 @@ object Day23 {
         n1.compareTo(n2)
   }
 
+  case class Clique(nodes: List[String]) {
+    def password: String = {
+      nodes.sorted.mkString(",")
+    }
+  }
+
+  object Clique {
+    given Ordering[Clique] with
+      def compare(c1: Clique, c2: Clique): Int = {
+        Integer.compare(c1.nodes.length, c2.nodes.length)
+      }
+  }
+
   class Graph(
       name2id: Map[String, Int],
       id2name: Map[Int, String],
@@ -39,6 +52,27 @@ object Day23 {
         }
       }
       result.toList
+    }
+
+    def maximalClique: Clique = {
+      val result = mutable.ArrayBuffer.empty[Clique]
+
+      def bronKerbosch(r: Set[Int], p: Set[Int], x: Set[Int]): Unit = {
+        if p.isEmpty && x.isEmpty then {
+          result += Clique(r.map(id2name).toList)
+        } else {
+          var pp = p
+          var xx = x
+          for (v <- p) {
+            val nv = edges(v).toSet
+            bronKerbosch(r + v, pp.intersect(nv), xx.intersect(nv))
+            pp -= v
+            xx += v
+          }
+        }
+      }
+      bronKerbosch(Set.empty, id2name.keySet, Set.empty)
+      result.max
     }
 
     override def toString: String = {
@@ -82,8 +116,10 @@ object Day23 {
     filtered.length
   }
 
-  def part2(data: List[String]): Long = {
-    ??? // TODO
+  def part2(data: List[String]): String = {
+    val graph = GraphParser(data).parse
+    val maxClique = graph.maximalClique
+    maxClique.password
   }
 
   @main def main23(): Unit = {
