@@ -7,11 +7,11 @@ import utils.IO
 import scala.jdk.CollectionConverters.*
 import munit.FunSuite
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class Day22Suite extends FunSuite {
 
-  override val munitTimeout = Duration(5, "m")
+  override val munitTimeout: FiniteDuration = Duration(5, "m")
 
   val example1: String = """1
                           |10
@@ -45,9 +45,7 @@ class Day22Suite extends FunSuite {
 
   test("for secret number 123 and changes -1, -1. 0, 2, price should be 6") {
     val prices = Sequence(123L).prices(2001)
-    println(s"prices = $prices")
     val changes = Changes(prices)
-    println(s"changes = ${changes.changes}")
     val pattern: Pattern.Four = Pattern.Four(-1, -1, 0, 2)
     assertEquals(changes.evaluate(pattern), 6)
   }
@@ -90,5 +88,13 @@ class Day22Suite extends FunSuite {
 
   test("for secret number 123L the max value on a sequence of 10 prices should be 6") {
     assertEquals(Optimizer(List(123L), 10).max, 6)
+  }
+
+  test("masks for 123L") {
+    val prices = Sequence(123L).prices(10)
+    val changes = Changes(prices)
+    changes.masks.indices.foreach( i =>
+      println(s"${i -9} -> ${changes.masks(i)} -> ${changes.ones(changes.masks(i))}")
+    )
   }
 }

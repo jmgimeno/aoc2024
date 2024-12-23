@@ -53,8 +53,20 @@ object Day22 {
 
   class Changes(prices: Vector[Int]) {
 
-    val changes =
-      prices.sliding(2).map { case Vector(a, b) => b - a }.toVector
+    val changes: Vector[Int] = prices.sliding(2).map { case Vector(a, b) => b - a }.toVector
+
+    val masks: Array[BigInt] =
+      Array.fill(19)(BigInt(0)) // one mask per difference, from -9 to +9
+
+    changes.zipWithIndex.foreach((c, i) =>
+      masks(c + 9) = masks(c + 9).setBit(i)
+    )
+
+    def ones(mask: BigInt): List[Int] = {
+      (0 to changes.size)
+        .filter(mask.testBit)
+        .toList // the last three does not count
+    }
 
     private def filterWindow(selector: Vector[Int] => Boolean): Int = {
       changes
@@ -64,14 +76,16 @@ object Day22 {
           selector(window)
         }
         .map { (_, index) =>
-          prices(index + 4) // one position more because the first price has no diff
+          prices(
+            index + 4
+          ) // one position more because the first price has no diff
         }
         .maxOption
         .getOrElse(0)
     }
 
     def maxBound(pattern: Pattern): Int = pattern match {
-      case Pattern.Zero => 0
+      case Pattern.Zero     => 0
       case Pattern.One(one) =>
         filterWindow(w => w(0) == one)
       case Pattern.Two(one, two) =>
@@ -79,7 +93,9 @@ object Day22 {
       case Pattern.Three(one, two, three) =>
         filterWindow(w => w(0) == one && w(1) == two && w(2) == three)
       case Pattern.Four(one, two, three, four) =>
-        filterWindow(w => w(0) == one && w(1) == two && w(2) == three && w(3) == four)
+        filterWindow(w =>
+          w(0) == one && w(1) == two && w(2) == three && w(3) == four
+        )
     }
 
     def evaluate(pattern: Pattern.Four): Int = {
@@ -87,10 +103,15 @@ object Day22 {
       val found = changes
         .sliding(4)
         .zipWithIndex
-        .find { (w, _) => w(0) == one && w(1) == two && w(2) == three && w(3) == four }
+        .find { (w, _) =>
+          w(0) == one && w(1) == two && w(2) == three && w(3) == four
+        }
         .map { (_, i) => i }
       found match {
-        case Some(value) => prices(value + 4) // one position more because the first price has no diff
+        case Some(value) =>
+          prices(
+            value + 4
+          ) // one position more because the first price has no diff
         case None => 0
       }
     }
@@ -103,8 +124,8 @@ object Day22 {
     case class Node(pattern: Pattern, maxBound: Int)
 
     given Ordering[Node] with
-      def compare(n1:Node, n2: Node): Int =
-        n1.maxBound - n2.maxBound  // the greater the maxBound the greater the priority
+      def compare(n1: Node, n2: Node): Int =
+        n1.maxBound - n2.maxBound // the greater the maxBound the greater the priority
 
     def randomPattern: Pattern.Four = {
       val random = Random()
@@ -136,8 +157,7 @@ object Day22 {
           case pattern =>
             for (neighbour <- pattern.expand) {
               val bound = maxBound(neighbour)
-              if (bound > minBound) then
-                queue.enqueue(Node(neighbour, bound))
+              if bound > minBound then queue.enqueue(Node(neighbour, bound))
             }
       }
       minBound

@@ -22,6 +22,6 @@
 - Day20: Race Condition
 - Day21: Keypad Conundrum
 - Day22: Monkey Market
-- Day23: ???
+- Day23: LAN Party
 - Day24: ???
 - Day25: ???
