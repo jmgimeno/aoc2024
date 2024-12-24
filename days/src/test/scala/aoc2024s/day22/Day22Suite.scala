@@ -1,4 +1,3 @@
-
 package aoc2024s.day22
 
 import aoc2024s.day22.Day22.{Changes, Optimizer, Pattern, Sequence}
@@ -86,15 +85,28 @@ class Day22Suite extends FunSuite {
     assertEquals(optimizer.evaluate(pattern), 23)
   }
 
-  test("for secret number 123L the max value on a sequence of 10 prices should be 6") {
+  test(
+    "for secret number 123L the max value on a sequence of 10 prices should be 6"
+  ) {
     assertEquals(Optimizer(List(123L), 10).max, 6)
   }
 
-  test("masks for 123L") {
+  test("masks and ones for 123L") {
     val prices = Sequence(123L).prices(10)
     val changes = Changes(prices)
-    changes.masks.indices.foreach( i =>
-      println(s"${i -9} -> ${changes.masks(i)} -> ${changes.ones(changes.masks(i))}")
-    )
+    val expectedMasks = // indices from -9 to +9
+      List(0, 0, 0, 0, 0, 0, 1, 320, 12, 144, 0, 32, 0, 0, 0, 2, 0, 0, 0)
+        .map(BigInt(_))
+    assertEquals(changes.masks.toList, expectedMasks)
+
+    for (diff <- List(-9, -8, -7, -6, -5, -4, 1, 3, 4, 5, 7, 8, 9)) {
+      assertEquals(changes.ones(changes.masks(diff + 9)), List.empty)
+    }
+    assertEquals(changes.ones(changes.masks(-3 + 9)), List(0))
+    assertEquals(changes.ones(changes.masks(-2 + 9)), List(6, 8))
+    assertEquals(changes.ones(changes.masks(-1 + 9)), List(2, 3))
+    assertEquals(changes.ones(changes.masks(0 + 9)), List(4, 7))
+    assertEquals(changes.ones(changes.masks(2 + 9)), List(5))
+    assertEquals(changes.ones(changes.masks(6 + 9)), List(1))
   }
 }
