@@ -63,55 +63,44 @@ object Day22 {
       masks(c + 9) = masks(c + 9).setBit(i)
     )
 
-    def indices(mask: BigInt): List[Int] = {
-      (0 to changes.size)
+    def prices(mask: BigInt): List[Int] = {
+      (0 until changes.size - 3) // the last three does not count
         .filter(mask.testBit)
-        .toList // the last three does not count
+        .map(i => prices(i + 4))
+        .toList
     }
 
-    def maxBound(pattern: Pattern): Int = pattern match
-      case Pattern.Zero => 9 // maximum value for a difference
+    def maxBound(pattern: Pattern): Option[Int] = pattern match
+      case Pattern.Zero => sys.error("zero pattern has no bound")
       case Pattern.One(one) =>
         val maskOnes = masks(one + 9)
-        indices(maskOnes)
-          .filter(_ < prices.size - 4)
-          .map(i => prices(i + 4))
-          .maxOption.getOrElse(0)
+        prices(maskOnes).maxOption
       case Pattern.Two(one, two) =>
         val maskOnes = masks(one + 9)
         val maskTwos = masks(two + 9)
-        indices(maskOnes & maskTwos >> 1)
-          .filter(_ < prices.size - 4)
-          .map(i => prices(i + 4))
-          .maxOption.getOrElse(0)
+        prices(maskOnes & maskTwos >> 1).maxOption
       case Pattern.Three(one, two, three) =>
         val maskOnes = masks(one + 9)
         val maskTwos = masks(two + 9)
         val maskThrees = masks(three + 9)
-        indices(maskOnes & maskTwos >> 1 & maskThrees >> 2)
-          .filter(_ < prices.size - 4)
-          .map(i => prices(i + 4))
-          .maxOption.getOrElse(0)
+        prices(maskOnes & maskTwos >> 1 & maskThrees >> 2).maxOption
       case Pattern.Four(one, two, three, four) =>
         val maskOnes = masks(one + 9)
         val maskTwos = masks(two + 9)
         val maskThrees = masks(three + 9)
         val maskFours = masks(four + 9)
-        indices(maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3)
-          .filter(_ < prices.size - 4)
-          .map(i => prices(i + 4))
-          .maxOption.getOrElse(0)
+        prices(
+          maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3
+        ).maxOption
 
-    def evaluate(pattern: Pattern.Four): Int = {
+    def evaluate(pattern: Pattern.Four): Option[Int] = {
       val Pattern.Four(one, two, three, four) = pattern
       val maskOnes = masks(one + 9)
       val maskTwos = masks(two + 9)
       val maskThrees = masks(three + 9)
       val maskFours = masks(four + 9)
       val mask = maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3
-      val found = indices(mask)
-      if found.isEmpty then 0
-      else prices(found.head + 4)
+      prices(mask).headOption
     }
   }
 
@@ -125,37 +114,37 @@ object Day22 {
       def compare(n1: Node, n2: Node): Int =
         n1.maxBound - n2.maxBound // the greater the maxBound the greater the priority
 
-    def randomPattern: Pattern.Four = {
-      val random = Random()
-      val one = random.between(-9, 10)
-      val two = random.between(-9, 10)
-      val three = random.between(-9, 10)
-      val four = random.between(-9, 10)
-      Pattern.Four(one, two, three, four)
+    def maxBound(pattern: Pattern): Option[Int] = {
+      changes
+        .map(_.maxBound(pattern))
+        .filter(_.isDefined)
+        .map(_.get)
+        .maxOption
     }
 
-    def maxBound(pattern: Pattern): Int = {
-      changes.map(c => c.maxBound(pattern)).sum
-    }
-
-    def evaluate(pattern: Pattern.Four): Int = {
-      changes.map(c => c.evaluate(pattern)).sum
+    def evaluate(pattern: Pattern.Four): Option[Int] = {
+      val matchedPrices = changes
+        .map(_.evaluate(pattern))
+        .filter(_.isDefined)
+        .map(_.get)
+      if matchedPrices.isEmpty then None else Some(matchedPrices.sum)
     }
 
     def max: Int = {
-      var minBound = evaluate(randomPattern)
-      val start = Node(Pattern.Zero, maxBound(Pattern.Zero))
+      var minBound = Int.MinValue
+      val start = Node(Pattern.Zero, Int.MaxValue)
       val queue = mutable.PriorityQueue(start)
       while (queue.nonEmpty) {
         val current = queue.dequeue()
         current.pattern match
           case solution: Pattern.Four =>
             val value = evaluate(solution)
-            if value > minBound then minBound = value
+            if value.isDefined && value.get > minBound then minBound = value.get
           case pattern =>
             for (neighbour <- pattern.expand) {
               val bound = maxBound(neighbour)
-              if bound > minBound then queue.enqueue(Node(neighbour, bound))
+              if bound.isDefined && bound.get > minBound then
+                queue.enqueue(Node(neighbour, bound.get))
             }
       }
       minBound
@@ -170,7 +159,6 @@ object Day22 {
 
   def part2(data: List[String]): Int = {
     val parsed = parse(data)
-    val changes = parsed.map(Sequence(_).prices(2000))
     Optimizer(parsed).max
   }
 
