@@ -115,11 +115,11 @@ object Day22 {
         n1.maxBound - n2.maxBound // the greater the maxBound the greater the priority
 
     def maxBound(pattern: Pattern): Option[Int] = {
-      changes
+      val maxBounds = changes
         .map(_.maxBound(pattern))
         .filter(_.isDefined)
         .map(_.get)
-        .maxOption
+        if maxBounds.isEmpty then None else Some(maxBounds.sum)
     }
 
     def evaluate(pattern: Pattern.Four): Option[Int] = {
