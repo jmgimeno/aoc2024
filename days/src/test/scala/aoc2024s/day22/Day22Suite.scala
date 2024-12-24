@@ -91,7 +91,7 @@ class Day22Suite extends FunSuite {
     assertEquals(Optimizer(List(123L), 10).max, 6)
   }
 
-  test("masks and ones for 123L") {
+  test("masks and indices for 123L") {
     val prices = Sequence(123L).prices(10)
     val changes = Changes(prices)
     val expectedMasks = // indices from -9 to +9
@@ -100,13 +100,50 @@ class Day22Suite extends FunSuite {
     assertEquals(changes.masks.toList, expectedMasks)
 
     for (diff <- List(-9, -8, -7, -6, -5, -4, 1, 3, 4, 5, 7, 8, 9)) {
-      assertEquals(changes.ones(changes.masks(diff + 9)), List.empty)
+      assertEquals(changes.indices(changes.masks(diff + 9)), List.empty)
     }
-    assertEquals(changes.ones(changes.masks(-3 + 9)), List(0))
-    assertEquals(changes.ones(changes.masks(-2 + 9)), List(6, 8))
-    assertEquals(changes.ones(changes.masks(-1 + 9)), List(2, 3))
-    assertEquals(changes.ones(changes.masks(0 + 9)), List(4, 7))
-    assertEquals(changes.ones(changes.masks(2 + 9)), List(5))
-    assertEquals(changes.ones(changes.masks(6 + 9)), List(1))
+    assertEquals(changes.indices(changes.masks(-3 + 9)), List(0))
+    assertEquals(changes.indices(changes.masks(-2 + 9)), List(6, 8))
+    assertEquals(changes.indices(changes.masks(-1 + 9)), List(2, 3))
+    assertEquals(changes.indices(changes.masks(0 + 9)), List(4, 7))
+    assertEquals(changes.indices(changes.masks(2 + 9)), List(5))
+    assertEquals(changes.indices(changes.masks(6 + 9)), List(1))
+  }
+
+  test("for secret number 123L, evaluation of some patterns") {
+    val prices = Sequence(123L).prices(10)
+    val changes = Changes(prices)
+    val optimizer = Optimizer(List(123L), 10)
+    assertEquals(changes.evaluate(Pattern.Four(-3, 6, -1, -1)), 4)
+    assertEquals(changes.evaluate(Pattern.Four(6, -1, -1, 0)), 4)
+    assertEquals(changes.evaluate(Pattern.Four(-1, -1, 0, 2)), 6)
+    assertEquals(changes.evaluate(Pattern.Four(-1, 0, 2, -2)), 4)
+    assertEquals(changes.evaluate(Pattern.Four(0, 2, -2, 0)), 4)
+    assertEquals(changes.evaluate(Pattern.Four(2, -2, 0, -2)), 2)
+  }
+
+  test("for secret number 123, bound of One patterns") {
+    val prices = Sequence(123L).prices(10)
+    val changes = Changes(prices)
+    val optimizer = Optimizer(List(123L), 10)
+    assertEquals(optimizer.maxBound(Pattern.One(-9)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-8)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-7)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-6)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-5)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-4)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-3)), 4)
+    assertEquals(optimizer.maxBound(Pattern.One(-2)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(-1)), 6)
+    assertEquals(optimizer.maxBound(Pattern.One(0)), 4)
+    assertEquals(optimizer.maxBound(Pattern.One(1)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(2)), 2)
+    assertEquals(optimizer.maxBound(Pattern.One(3)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(4)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(5)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(6)), 4)
+    assertEquals(optimizer.maxBound(Pattern.One(7)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(8)), 0)
+    assertEquals(optimizer.maxBound(Pattern.One(9)), 0)
   }
 }

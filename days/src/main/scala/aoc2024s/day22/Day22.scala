@@ -53,7 +53,8 @@ object Day22 {
 
   class Changes(prices: Vector[Int]) {
 
-    val changes: Vector[Int] = prices.sliding(2).map { case Vector(a, b) => b - a }.toVector
+    val changes: Vector[Int] =
+      prices.sliding(2).map { case Vector(a, b) => b - a }.toVector
 
     val masks: Array[BigInt] =
       Array.fill(19)(BigInt(0)) // one mask per difference, from -9 to +9
@@ -62,58 +63,55 @@ object Day22 {
       masks(c + 9) = masks(c + 9).setBit(i)
     )
 
-    def ones(mask: BigInt): List[Int] = {
+    def indices(mask: BigInt): List[Int] = {
       (0 to changes.size)
         .filter(mask.testBit)
         .toList // the last three does not count
     }
 
-    private def filterWindow(selector: Vector[Int] => Boolean): Int = {
-      changes
-        .sliding(4)
-        .zipWithIndex
-        .filter { (window, _) =>
-          selector(window)
-        }
-        .map { (_, index) =>
-          prices(
-            index + 4
-          ) // one position more because the first price has no diff
-        }
-        .maxOption
-        .getOrElse(0)
-    }
-
-    def maxBound(pattern: Pattern): Int = pattern match {
-      case Pattern.Zero     => 0
+    def maxBound(pattern: Pattern): Int = pattern match
+      case Pattern.Zero => 9 // maximum value for a difference
       case Pattern.One(one) =>
-        filterWindow(w => w(0) == one)
+        val maskOnes = masks(one + 9)
+        indices(maskOnes)
+          .filter(_ < prices.size - 4)
+          .map(i => prices(i + 4))
+          .maxOption.getOrElse(0)
       case Pattern.Two(one, two) =>
-        filterWindow(w => w(0) == one && w(1) == two)
+        val maskOnes = masks(one + 9)
+        val maskTwos = masks(two + 9)
+        indices(maskOnes & maskTwos >> 1)
+          .filter(_ < prices.size - 4)
+          .map(i => prices(i + 4))
+          .maxOption.getOrElse(0)
       case Pattern.Three(one, two, three) =>
-        filterWindow(w => w(0) == one && w(1) == two && w(2) == three)
+        val maskOnes = masks(one + 9)
+        val maskTwos = masks(two + 9)
+        val maskThrees = masks(three + 9)
+        indices(maskOnes & maskTwos >> 1 & maskThrees >> 2)
+          .filter(_ < prices.size - 4)
+          .map(i => prices(i + 4))
+          .maxOption.getOrElse(0)
       case Pattern.Four(one, two, three, four) =>
-        filterWindow(w =>
-          w(0) == one && w(1) == two && w(2) == three && w(3) == four
-        )
-    }
+        val maskOnes = masks(one + 9)
+        val maskTwos = masks(two + 9)
+        val maskThrees = masks(three + 9)
+        val maskFours = masks(four + 9)
+        indices(maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3)
+          .filter(_ < prices.size - 4)
+          .map(i => prices(i + 4))
+          .maxOption.getOrElse(0)
 
     def evaluate(pattern: Pattern.Four): Int = {
       val Pattern.Four(one, two, three, four) = pattern
-      val found = changes
-        .sliding(4)
-        .zipWithIndex
-        .find { (w, _) =>
-          w(0) == one && w(1) == two && w(2) == three && w(3) == four
-        }
-        .map { (_, i) => i }
-      found match {
-        case Some(value) =>
-          prices(
-            value + 4
-          ) // one position more because the first price has no diff
-        case None => 0
-      }
+      val maskOnes = masks(one + 9)
+      val maskTwos = masks(two + 9)
+      val maskThrees = masks(three + 9)
+      val maskFours = masks(four + 9)
+      val mask = maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3
+      val found = indices(mask)
+      if found.isEmpty then 0
+      else prices(found.head + 4)
     }
   }
 
