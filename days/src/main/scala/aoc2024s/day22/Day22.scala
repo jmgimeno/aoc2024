@@ -4,7 +4,6 @@ import utils.IO
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import scala.util.Random
 
 object Day22 {
 
@@ -130,8 +129,15 @@ object Day22 {
       if matchedPrices.isEmpty then None else Some(matchedPrices.sum)
     }
 
+    def greedyMinBound: Int = {
+      val one = (-9 to +9).map(d => (maxBound(Pattern.One(d)), d)).filter(_._1.isDefined).map(p => (p._1.get, p._2)).max._2
+      val two = (-9 to +9).map(d => (maxBound(Pattern.Two(one, d)), d)).filter(_._1.isDefined).map(p => (p._1.get, p._2)).max._2
+      val three = (-9 to +9).map(d => (maxBound(Pattern.Three(one, two, d)), d)).filter(_._1.isDefined).map(p => (p._1.get, p._2)).max._2
+      (-9 to +9).map(d => evaluate(Pattern.Four(one, two, three, d))).filter(_.isDefined).map(_.get).max
+    }
+
     def max: Int = {
-      var minBound = Int.MinValue
+      var minBound = greedyMinBound
       val start = Node(Pattern.Zero, Int.MaxValue)
       val queue = mutable.PriorityQueue(start)
       while (queue.nonEmpty) {

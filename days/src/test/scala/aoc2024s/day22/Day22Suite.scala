@@ -37,9 +37,9 @@ class Day22Suite extends FunSuite {
     assertEquals(Day22.part2(data), 23)
   }
 
-  test("part2 - input data".ignore) {
+  test("part2 - input data".ignore) { // too slow
     val data = IO.getResourceAsList("aoc2024/day22.txt").asScala.toList
-    assertEquals(Day22.part2(data), -1)
+    assertEquals(Day22.part2(data), 2018)
   }
 
   test("for secret number 123 and changes -1, -1. 0, 2, price should be 6") {
