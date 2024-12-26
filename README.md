@@ -24,4 +24,4 @@
 - Day22: Monkey Market
 - Day23: LAN Party
 - Day24: Crossed Wires
-- Day25: ???
+- Day25: Code Chronicle
