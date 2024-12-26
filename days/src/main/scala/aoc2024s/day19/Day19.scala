@@ -27,12 +27,11 @@ object Day19 {
       def go(path: List[Stripe], node: Node): Unit = {
         path match {
           case Nil => node.isTerminal = true
-          case s :: ss => {
-            if (node.children(s.ordinal) == null) then {
+          case s :: ss =>
+            if node.children(s.ordinal) == null then {
               node.children(s.ordinal) = new Node
             }
             go(ss, node.children(s.ordinal))
-          }
         }
       }
       go(path, root)
@@ -121,6 +120,41 @@ object Day19 {
     }
   }
 
+  class DesignCounter(patterns: List[String], designs: List[String]) {
+    private val patternsByLength = patterns.groupBy(_.length)
+    private val cache = mutable.HashMap.empty[String, Long]
+
+    private def ofLength(length: Int): Iterator[String] = {
+      patternsByLength.getOrElse(length, List.empty).iterator
+    }
+
+    private def shorterThan(length: Int): Iterator[String] = {
+      (1 until length).iterator.flatMap(ofLength)
+    }
+
+    def count: Long = {
+      val result = designs.map(count).sum
+        result
+    }
+
+    private def count(design: String): Long = {
+      cache.getOrElseUpdate(design, compute(design, design.length))
+    }
+
+    private def compute(design: String, length: Int): Long = {
+      if length == 0L then 1L
+      else {
+        val sameLength = if ofLength(length).contains(design) then 1 else 0
+        val shorter = shorterThan(length).map { pattern =>
+          if design.startsWith(pattern) then {
+            count(design.substring(pattern.length))
+          } else 0L
+        }.sum
+        sameLength + shorter
+      }
+    }
+  }
+
   object Parser {
     def parse(data: List[String]): (List[Pattern], List[Design]) = {
       val patterns = data.head.split(", ").map(parsePatternOrDesign).toList
@@ -130,6 +164,12 @@ object Day19 {
 
     private def parsePatternOrDesign(line: String): List[Stripe] =
       line.toCharArray.map(c => Stripe.valueOf(c.toUpper.toString)).toList
+
+    def parseRaw(data: List[String]): (List[String], List[String]) = {
+      val patterns = data.head.split(", ").toList
+      val designs = data.drop(2)
+      (patterns, designs)
+    }
   }
 
   def part1(data: List[String]): Int = {
@@ -138,10 +178,9 @@ object Day19 {
     Trie.Counter(trie, patterns).countPossible
   }
 
-  def part2(data: List[String]): Int = {
-    val (patterns, designs) = Parser.parse(data)
-    val trie = Trie.from(designs)
-    Trie.Counter(trie, patterns).countPossible2
+  def part2(data: List[String]): Long = {
+    val (patterns, designs) = Parser.parseRaw(data)
+    DesignCounter(patterns, designs).count
   }
 
   @main def main19(): Unit = {
