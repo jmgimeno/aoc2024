@@ -68,11 +68,7 @@ object Day15 {
 
   type Grid = IArray[IArray[Content]]
 
-  case class Update(position: Position, content: Content) {
-    def executeOn(grid: Grid): Grid = {
-      grid.updated(position.y, grid(position.y).updated(position.x, content))
-    }
-  }
+  case class Update(position: Position, content: Content)
 
   class Warehouse(val grid: Grid) {
     val height: Int = grid.length
@@ -85,15 +81,9 @@ object Day15 {
     def execute(updates: List[Update]): Warehouse = {
       Warehouse {
         updates.foldLeft(grid) {
-          case (grid, update) =>
-            update.executeOn(grid)
+          case (grid, Update(position, content)) =>
+            grid.updated(position.y, grid(position.y).updated(position.x, content))
         }
-      }
-    }
-
-    private def updated(position: Position, content: Content): Warehouse = {
-      Warehouse {
-        grid.updated(position.y, grid(position.y).updated(position.x, content))
       }
     }
 
@@ -185,7 +175,7 @@ object Day15 {
       Some {
         val contents = trace.map(p => at(p))
         val newContents = Content.Empty +: contents.init
-        trace.zip(newContents).map(Update.apply.tupled)
+        trace.zip(newContents).map { case (position, content) => Update(position, content) }
       }
     }
 
