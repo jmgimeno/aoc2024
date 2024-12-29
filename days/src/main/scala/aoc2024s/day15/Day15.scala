@@ -1,8 +1,8 @@
-
-package aoc2024s.day15;
+package aoc2024s.day15
 
 import utils.IO
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object Day15 {
@@ -29,24 +29,10 @@ object Day15 {
     case Right extends Direction('>')
 
     def apply(position: Position): Position = this match {
-      case Up => Position(position.x, position.y - 1)
-      case Down => Position(position.x, position.y + 1)
-      case Left => Position(position.x - 1, position.y)
+      case Up    => Position(position.x, position.y - 1)
+      case Down  => Position(position.x, position.y + 1)
+      case Left  => Position(position.x - 1, position.y)
       case Right => Position(position.x + 1, position.y)
-    }
-
-    def clockWise: Direction = this match {
-      case Up => Right
-      case Down => Left
-      case Left => Up
-      case Right => Down
-    }
-
-    def counterClockWise: Direction = this match {
-      case Up => Left
-      case Down => Right
-      case Left => Down
-      case Right => Up
     }
 
     override def toString: String = char.toString
@@ -59,16 +45,25 @@ object Day15 {
       movement(this)
     }
 
-    def gps: Int = {
-      100 * y + x
+    def gps: Long = {
+      100L * y + x
     }
 
     override def toString: String = s"($x, $y)"
   }
 
-  type Grid = IArray[IArray[Content]]
+  private type Grid = IArray[IArray[Content]]
 
   case class Update(position: Position, content: Content)
+
+  case class Counters(
+      boxes: Int,
+      boxesLeft: Int,
+      boxesRight: Int,
+      empty: Int,
+      robot: Int,
+      walls: Int
+  )
 
   class Warehouse(val grid: Grid) {
     val height: Int = grid.length
@@ -80,9 +75,8 @@ object Day15 {
 
     def execute(updates: List[Update]): Warehouse = {
       Warehouse {
-        updates.foldLeft(grid) {
-          case (grid, Update(position, content)) =>
-            grid.updated(position.y, grid(position.y).updated(position.x, content))
+        updates.foldLeft(grid) { case (grid, Update(Position(x, y), content)) =>
+          grid.updated(y, grid(y).updated(x, content))
         }
       }
     }
@@ -96,7 +90,7 @@ object Day15 {
       robots.head
     }
 
-    def part(isBig: Boolean): Int = {
+    def part(isBig: Boolean): Long = {
       (for {
         y <- 0 until height
         x <- 0 until width
@@ -105,82 +99,144 @@ object Day15 {
       } yield gps).sum
     }
 
-    def tryMoveNew(robot: Position, direction: Direction): Option[(Warehouse, Position)] = {
-      findUpdates(robot, direction).map { updates =>
+    def move(robot: Position, forward: Direction): Option[(Warehouse, Position)] = {
+      assert(at(robot) == Robot)
+      findUpdates(robot, forward).map { updates =>
         val newWarehouse = execute(updates)
-        val newPosition = direction(robot)
+        val newPosition = forward(robot)
         (newWarehouse, newPosition)
       }
     }
 
-    def findUpdates(robot: Position, direction: Direction): Option[List[Update]] = {
-      val trace = makeTrace(robot, direction)
-      val end = direction(trace.last)
-      println(s"Trace: ${trace.map(at).mkString} and end: ${at(end)}")
+    private def findUpdates(from: Position, forward: Direction): Option[List[Update]] = {
+      forward match {
+        case Left | Right =>
+          updatesForward(from, forward)
+        case Up | Down =>
+          updatesForwardAndSideways(from, forward)
+      }
+    }
+
+    private def updatesForward(from: Position, forward: Direction): Option[List[Update]] = {
+      val positions = findShapeForward(from, forward)
+      val end = forward(positions.last)
       at(end) match {
         case Wall =>
           None
-        case Empty => {
-          direction match {
-            case Left | Right => {
-              rotateNew(trace ::: List(end))
-            }
-            case Up | Down => {
-              for {
-                centerUpdates <- rotateNew(trace ::: List(end))
-                boxLeft = trace.find(p => at(p) == BoxLeft)
-                leftUpdates <- expandNew(boxLeft, direction, Left)
-                boxRight = trace.find(p => at(p) == BoxRight)
-                rightUpdates <- expandNew(boxRight, direction, Right)
-              } yield centerUpdates ::: leftUpdates ::: rightUpdates
-            }
+        case Empty =>
+          Some(rotate(positions ::: List(end)))
+        case _ => sys.error("Impossible")
+      }
+    }
+
+    private def findShapeForward(from: Position, forward: Direction): List[Position] = {
+      Iterator
+        .iterate(from)(forward.apply)
+        .takeWhile(p => at(p) != Wall && at(p) != Empty)
+        .toList
+    }
+
+    private def updatesForwardAndSideways(from: Position, forward: Direction): Option[List[Update]] = {
+      val positions = findShapeForwardAndSideways(from, forward)
+      val comparator = if forward == Down then Ordering.by[Position, Int](_.y) else Ordering.by[Position, Int](_.y).reverse
+      val columns = positions.groupBy(_.x).map((x, positions) => (x, positions.sorted(comparator)))
+      val segments = columns.values.flatMap(column => splitSegments(column))
+      val traces = segments.map(segment => segment :+ forward(segment.last))
+      if traces.forall(trace => at(trace.last) == Empty) then
+        Some {
+          traces.flatMap(trace => rotate(trace)).toList
+        }
+      else None
+    }
+
+    private def splitSegments(column: List[Position]): List[List[Position]] = {
+      column
+        .foldLeft(List.empty[List[Position]]) { (acc, position) =>
+          acc match {
+            case Nil => List(List(position))
+            case head :: tail =>
+              if math.abs(head.last.y - position.y) == 1 then (head :+ position) :: tail
+              else List(position) :: acc
           }
         }
-        case _ => sys.error("Unexpected content")
-      }
+        .reverse
     }
 
-    def expandNew(box: Option[Position], forward: Direction, expansion: Direction): Option[List[Update]] = {
-      box match {
-        case Some(position) =>
-          val base = expansion(position)
-          println(s"Expanding $forward from $position (${at(position)}) at $base (${at(base)}) in direction $expansion with target ${at(position)}")
-          val trace = makeTrace(base, forward)
-          println(s"Trace: ${trace.map(at).mkString}")
-          if (trace.isEmpty) {
-            println(s"Empty trace with box at $position in direction $forward and expanding $expansion" )
-            None
-          } else {
-            val end = forward(trace.last)
-            at(end) match {
-              case Wall => None
-              case Empty =>
-                for {
-                  forwardUpdates <- rotateNew(trace ::: List(end))
-                  box = trace.find(p => at(p) == at(position))
-                  expansionUpdates <- expandNew(box, forward, expansion)
-                } yield forwardUpdates ::: expansionUpdates
-              case _ => sys.error("Unexpected content")
-            }
-          }
-        case None => Some(List())
-      }
+    private def findShapeForwardAndSideways(from: Position, forward: Direction): List[Position] = {
+      val explored = mutable.HashSet.empty[Position]
+      val shape = mutable.ArrayBuffer.empty[Position]
+      val stack = mutable.Stack(from)
+      while stack.nonEmpty do
+        val current = stack.pop()
+        if !explored.contains(current) then
+          explored += current
+          at(current) match
+            case Robot | Box =>
+              shape += current
+              stack.push(forward(current))
+            case BoxLeft =>
+              shape += current
+              stack.push(forward(current))
+              if forward == Up || forward == Down then
+                stack.push(Right(current))
+            case BoxRight =>
+              shape += current
+              stack.push(forward(current))
+              if forward == Up || forward == Down then
+                stack.push(Left(current))
+            case Wall | Empty => ()
+      shape.toList
     }
 
-    private def makeTrace(base: Position, forward: Direction) = {
-      Iterator.iterate(base)(forward.apply).takeWhile(p => at(p) != Wall && at(p) != Empty).toList
-    }
-
-    def rotateNew(trace: List[Position]): Option[List[Update]] = {
-      Some {
-        val contents = trace.map(p => at(p))
-        val newContents = Content.Empty +: contents.init
-        trace.zip(newContents).map { case (position, content) => Update(position, content) }
+    private def rotate(trace: List[Position]): List[Update] = {
+      val contents = trace.map(p => at(p))
+      val newContents = contents.last +: contents.init
+      trace.zip(newContents).map { case (position, newContent) =>
+        Update(position, newContent)
       }
     }
 
     override def toString: String = {
       grid.map(_.mkString).mkString("\n")
+    }
+
+    def count: Counters = {
+      grid.foldLeft(Counters(0, 0, 0, 0, 0, 0)) { (counters, row) =>
+        row.foldLeft(counters) { (counters, content) =>
+          content match {
+            case Box      => counters.copy(boxes = counters.boxes + 1)
+            case BoxLeft  => counters.copy(boxesLeft = counters.boxesLeft + 1)
+            case BoxRight => counters.copy(boxesRight = counters.boxesRight + 1)
+            case Empty    => counters.copy(empty = counters.empty + 1)
+            case Robot    => counters.copy(robot = counters.robot + 1)
+            case Wall     => counters.copy(walls = counters.walls + 1)
+          }
+        }
+      }
+    }
+
+    private def wellFormedLeftBoxes: Boolean = {
+      for {
+        y <- 0 until height
+        x <- 0 until width
+        if grid(y)(x) == BoxLeft
+        if grid(y)(x + 1) != BoxRight
+      } return false
+      true
+    }
+
+    private def wellFormedRightBoxes: Boolean = {
+      for {
+        y <- 0 until height
+        x <- 0 until width
+        if grid(y)(x) == BoxRight
+        if grid(y)(x - 1) != BoxLeft
+      } return false
+      true
+    }
+
+    def wellFormedBoxes: Boolean = {
+      wellFormedLeftBoxes && wellFormedRightBoxes
     }
   }
 
@@ -189,9 +245,9 @@ object Day15 {
   case class State(warehouse: Warehouse, robot: Position) {
 
     private def step(movement: Direction): State = {
-      warehouse.tryMoveNew(robot, movement) match {
+      warehouse.move(robot, movement) match {
         case Some((newWarehouse, newRobot)) => State(newWarehouse, newRobot)
-        case None => this
+        case None                           => this
       }
     }
 
@@ -201,11 +257,11 @@ object Day15 {
       }
     }
 
-    def part1: Int = {
+    def part1: Long = {
       warehouse.part(isBig = false)
     }
 
-    def part2: Int = {
+    def part2: Long = {
       warehouse.part(isBig = true)
     }
   }
@@ -265,11 +321,11 @@ object Day15 {
 
     private def upgradeContent(content: Content): Seq[Content] = {
       content match {
-        case Content.Wall => Seq(Content.Wall, Content.Wall)
-        case Content.Box => Seq(Content.BoxLeft, Content.BoxRight)
+        case Content.Wall  => Seq(Content.Wall, Content.Wall)
+        case Content.Box   => Seq(Content.BoxLeft, Content.BoxRight)
         case Content.Empty => Seq(Content.Empty, Content.Empty)
         case Content.Robot => Seq(Content.Robot, Content.Empty)
-        case _ => sys.error("Only part 1 grids are updatable")
+        case _             => sys.error("Only part 1 grids are updatable")
       }
     }
   }
@@ -283,10 +339,10 @@ object Day15 {
   }
 
   @main def main15(): Unit = {
-    val data = IO.getResourceAsList("aoc2024/day15.txt").asScala.toList;
-    val part1 = Day15.part1(data);
-    println(s"part1 = $part1");
-    val part2 = Day15.part2(data);
-    println(s"part2 = $part2");
+    val data = IO.getResourceAsList("aoc2024/day15.txt").asScala.toList
+    val part1 = Day15.part1(data)
+    println(s"part1 = $part1")
+    val part2 = Day15.part2(data)
+    println(s"part2 = $part2")
   }
 }
