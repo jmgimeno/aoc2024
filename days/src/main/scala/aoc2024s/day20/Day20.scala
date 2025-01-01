@@ -70,14 +70,14 @@ object Day20 {
       sys.error("No solution found")
     }
 
-    def canCheat(p1: Position, p2: Position): Boolean = {
-      p1.manhattanDistance(p2) == 2 && this(p1 mid p2).isWall
+    def canCheat(cheatLength: Int)(p1: Position, p2: Position): Boolean = {
+      p1.manhattanDistance(p2) <= cheatLength
     }
 
-    def savings(minSavings: Int): Int = {
+    def savings(minSavings: Int, cheatLength: Int): Int = {
       val d = distances
       d.keys.sortBy(p => d(p)).tails.flatMap {
-        case p1 :: ps => ps.filter(canCheat(p1, _)).map(p2 => d(p2) - d(p1) - 2)
+        case p1 :: ps => ps.filter(canCheat(cheatLength)(p1, _)).map(p2 => d(p2) - d(p1) - p2.manhattanDistance(p1))
         case _ => Nil
       }.count(_ >= minSavings)
     }
@@ -135,17 +135,17 @@ object Day20 {
     }
   }
 
-  def part1(data: List[String], minSavings: Int): Int = {
-    Racetrack(data).savings(minSavings)
+  def part1(data: List[String], minSavings: Int = 100): Int = {
+    Racetrack(data).savings(minSavings, 2)
   }
 
-  def part2(data: List[String]): Long = {
-    ??? // TODO
+  def part2(data: List[String], minSavings: Int = 100): Int = {
+    Racetrack(data).savings(minSavings, 20)
   }
 
   @main def main20(): Unit = {
     val data = IO.getResourceAsList("aoc2024/day20.txt").asScala.toList
-    val part1 = Day20.part1(data, 100)
+    val part1 = Day20.part1(data)
     println(s"part1 = $part1")
     val part2 = Day20.part2(data)
     println(s"part2 = $part2")

@@ -31,16 +31,16 @@ class Day20Suite extends FunSuite {
 
   test("part1 - input data") {
     val data = IO.getResourceAsList("aoc2024/day20.txt").asScala.toList
-    assertEquals(Day20.part1(data, 100), 1375)
+    assertEquals(Day20.part1(data), 1375)
   }
 
   test("part2 - example data") {
     val data = IO.splitLinesAsList(example).asScala.toList
-    assertEquals(Day20.part2(data), -1L)
+    assertEquals(Day20.part2(data, 50), 285)
   }
 
   test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day20.txt").asScala.toList
-    assertEquals(Day20.part2(data), -1L)
+    assertEquals(Day20.part2(data), 983054)
   }
 }
