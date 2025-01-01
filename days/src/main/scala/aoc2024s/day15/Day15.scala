@@ -99,16 +99,14 @@ object Day15 {
       } yield gps).sum
     }
 
-    def move(robot: Position, forward: Direction): Option[(Warehouse, Position)] = {
-      assert(at(robot) == Robot)
-      findUpdates(robot, forward).map { updates =>
-        val newWarehouse = execute(updates)
-        val newPosition = forward(robot)
-        (newWarehouse, newPosition)
+    def move(robot: Position, forward: Direction): (Warehouse, Position) = {
+      findUpdates(robot, forward) match {
+        case Nil     => (this, robot)
+        case updates => (execute(updates), forward(robot))
       }
     }
 
-    private def findUpdates(from: Position, forward: Direction): Option[List[Update]] = {
+    private def findUpdates(from: Position, forward: Direction): List[Update] = {
       forward match {
         case Left | Right =>
           updatesForward(from, forward)
@@ -117,14 +115,14 @@ object Day15 {
       }
     }
 
-    private def updatesForward(from: Position, forward: Direction): Option[List[Update]] = {
+    private def updatesForward(from: Position, forward: Direction): List[Update] = {
       val positions = findShapeForward(from, forward)
       val end = forward(positions.last)
       at(end) match {
         case Wall =>
-          None
+          List.empty
         case Empty =>
-          Some(rotate(positions ::: List(end)))
+          rotate(positions ::: List(end))
         case _ => sys.error("Impossible")
       }
     }
@@ -136,17 +134,16 @@ object Day15 {
         .toList
     }
 
-    private def updatesForwardAndSideways(from: Position, forward: Direction): Option[List[Update]] = {
+    private def updatesForwardAndSideways(from: Position, forward: Direction): List[Update] = {
       val positions = findShapeForwardAndSideways(from, forward)
-      val comparator = if forward == Down then Ordering.by[Position, Int](_.y) else Ordering.by[Position, Int](_.y).reverse
+      val comparator =
+        if forward == Down then Ordering.by[Position, Int](_.y) else Ordering.by[Position, Int](_.y).reverse
       val columns = positions.groupBy(_.x).map((x, positions) => (x, positions.sorted(comparator)))
       val segments = columns.values.flatMap(column => splitSegments(column))
       val traces = segments.map(segment => segment :+ forward(segment.last))
       if traces.forall(trace => at(trace.last) == Empty) then
-        Some {
           traces.flatMap(trace => rotate(trace)).toList
-        }
-      else None
+      else List.empty
     }
 
     private def splitSegments(column: List[Position]): List[List[Position]] = {
@@ -164,28 +161,24 @@ object Day15 {
 
     private def findShapeForwardAndSideways(from: Position, forward: Direction): List[Position] = {
       val explored = mutable.HashSet.empty[Position]
-      val shape = mutable.ArrayBuffer.empty[Position]
       val stack = mutable.Stack(from)
       while stack.nonEmpty do
         val current = stack.pop()
         if !explored.contains(current) then
-          explored += current
           at(current) match
             case Robot | Box =>
-              shape += current
+              explored += current
               stack.push(forward(current))
             case BoxLeft =>
-              shape += current
+              explored += current
               stack.push(forward(current))
-              if forward == Up || forward == Down then
-                stack.push(Right(current))
+              stack.push(Right(current))
             case BoxRight =>
-              shape += current
+              explored += current
               stack.push(forward(current))
-              if forward == Up || forward == Down then
-                stack.push(Left(current))
+              stack.push(Left(current))
             case Wall | Empty => ()
-      shape.toList
+      explored.toList
     }
 
     private def rotate(trace: List[Position]): List[Update] = {
@@ -246,8 +239,7 @@ object Day15 {
 
     private def step(movement: Direction): State = {
       warehouse.move(robot, movement) match {
-        case Some((newWarehouse, newRobot)) => State(newWarehouse, newRobot)
-        case None                           => this
+        case (newWarehouse, newRobot) => State(newWarehouse, newRobot)
       }
     }
 
