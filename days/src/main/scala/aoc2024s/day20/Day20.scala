@@ -8,8 +8,8 @@ import scala.jdk.CollectionConverters.*
 object Day20 {
 
   extension (c: Char) {
-    def isEnd: Boolean = c == 'E'
-    def isStart: Boolean = c == 'S'
+    private def isEnd: Boolean = c == 'E'
+    private def isStart: Boolean = c == 'S'
     def isTrack: Boolean = c == '.' || c == 'S' || c == 'E'
     def isWall: Boolean = c == '#'
   }
@@ -38,43 +38,48 @@ object Day20 {
       0 <= p.x && p.x < width && 0 <= p.y && p.y < height
     }
 
-    def expandNoCheat(node: Node): Seq[(Position, CheatingHistory)] = {
+    def expandNoCheat(node: Node): Seq[Position] = {
       Direction.values
         .map(d => d(node.p))
         .filter(p => isInside(p) && !racetrack(p.y)(p.x).isWall)
-        .map((_, node.cheatingHistory))
     }
 
-    def expandToStart(node: Node): Seq[(Position, CheatingHistory)] = {
-      Direction.values
-        .map(d => d(node.p))
-        .filter(p => isInside(p) && racetrack(p.y)(p.x).isWall)
-        .map(p => (p, CheatingHistory.Started(p)))
-    }
-
-    def expandToEnd(
-        node: Node,
-        start: Position
-    ): Seq[(Position, CheatingHistory)] = {
-      Direction.values
-        .map(d => d(node.p))
-        .filter(p => isInside(p) && !racetrack(p.y)(p.x).isWall)
-        .map(p => (p, CheatingHistory.Ended(start, p)))
-    }
-
-    def expand(
-        allowCheating: Boolean
-    )(node: Node): Seq[(Position, CheatingHistory)] = {
-      if !allowCheating then expandNoCheat(node)
-      else
-        node match {
-          case Node(p: Position, _, CheatingHistory.NoCheating) =>
-            expandNoCheat(node) ++ expandToStart(node)
-          case Node(p: Position, _, CheatingHistory.Started(start)) =>
-            expandToEnd(node, start)
-          case Node(p: Position, _, CheatingHistory.Ended(_, _)) =>
-            expandNoCheat(node)
+    def distances: Score[Position] = {
+      val f = Score[Position](height, width)
+      val g = Score[Position](height, width)
+      val h = (p: Position) => end.manhattanDistance(p)
+      f(start) = h(start)
+      g(start) = 0
+      val initial = Node(start, f(start))
+      val queue = mutable.PriorityQueue(initial)
+      val solutions = mutable.ArrayBuffer.empty[Node]
+      while (queue.nonEmpty) {
+        val current = queue.dequeue()
+        if current.p == end then return g
+        for (neighbour <- expandNoCheat(current)) {
+          val tentativeG = g(current.p) + 1
+          if (tentativeG < g(neighbour)) {
+            g(neighbour) = tentativeG
+            f(neighbour) = tentativeG + h(neighbour)
+            queue.enqueue(
+              Node(neighbour, f(neighbour))
+            )
+          }
         }
+      }
+      sys.error("No solution found")
+    }
+
+    def canCheat(p1: Position, p2: Position): Boolean = {
+      p1.manhattanDistance(p2) == 2 && this(p1 mid p2).isWall
+    }
+
+    def savings(minSavings: Int): Int = {
+      val d = distances
+      d.keys.sortBy(p => d(p)).tails.flatMap {
+        case p1 :: ps => ps.filter(canCheat(p1, _)).map(p2 => d(p2) - d(p1) - 2)
+        case _ => Nil
+      }.count(_ >= minSavings)
     }
   }
 
@@ -86,6 +91,10 @@ object Day20 {
 
     def manhattanDistance(other: Position): Int = {
       Math.abs(x - other.x) + Math.abs(y - other.y)
+    }
+
+    def mid(other: Position): Position = {
+      Position((x + other.x) / 2, (y + other.y) / 2)
     }
 
     override def toString: String = s"($x, $y)"
@@ -102,20 +111,20 @@ object Day20 {
     }
   }
 
-  private class Score[A](height: Int, width: Int) {
+  class Score[A](height: Int, width: Int) {
     private val values =
-      mutable.Map.WithDefault(mutable.HashMap.empty[A, Int], _ => Int.MaxValue)
+      mutable.Map.WithDefault(mutable.HashMap.empty[A, Int], (_: A) => Int.MaxValue)
+
     def apply(a: A): Int = values(a)
+
     def update(a: A, value: Int): Unit = values(a) = value
+
+    def keys: List[A] = values.keys.toList
+
+    override def toString: String = values.toString
   }
 
-  enum CheatingHistory {
-    case NoCheating
-    case Started(start: Position)
-    case Ended(start: Position, end: Position)
-  }
-
-  case class Node(p: Position, f: Int, cheatingHistory: CheatingHistory) {}
+  case class Node(p: Position, f: Int) {}
 
   object Node {
     given Ordering[Node] with {
@@ -126,62 +135,8 @@ object Day20 {
     }
   }
 
-  def allPaths(data: List[String],
-                canCheat: Boolean,
-                findMany: Boolean,
-                maxCost: Int = Int.MaxValue
-  ): List[Node] = {
-    val racetrack = Racetrack(data)
-    val start = racetrack.start
-    val end = racetrack.end
-    val f =
-      Score[(Position, CheatingHistory)](racetrack.height, racetrack.width)
-    val g =
-      Score[(Position, CheatingHistory)](racetrack.height, racetrack.width)
-    val h = (p: Position) => end.manhattanDistance(p)
-    val expand = racetrack.expand(canCheat)
-    f((start, CheatingHistory.NoCheating)) = h(start)
-    g((start, CheatingHistory.NoCheating)) = 0
-    val initial = Node(
-      start,
-      f((start, CheatingHistory.NoCheating)),
-      CheatingHistory.NoCheating
-    )
-    val queue = mutable.PriorityQueue(initial)
-    val solutions = mutable.ArrayBuffer.empty[Node]
-    while (queue.nonEmpty) {
-      val current = queue.dequeue()
-      if (
-        current.p == end && !current.cheatingHistory
-          .isInstanceOf[CheatingHistory.Started]
-      ) {
-        solutions += current
-        if (!findMany) return solutions.toList
-      }
-      for ((neighbour, cheatingHistory) <- expand(current)) {
-        val tentativeG = g((current.p, current.cheatingHistory)) + 1
-        if (tentativeG < g((neighbour, cheatingHistory))) {
-          g((neighbour, cheatingHistory)) = tentativeG
-          f((neighbour, cheatingHistory)) = tentativeG + h(neighbour)
-          if f((neighbour, cheatingHistory)) <= maxCost then {
-            queue.enqueue(
-              Node(neighbour, f((neighbour, cheatingHistory)), cheatingHistory)
-            )
-          }
-        }
-      }
-    }
-    solutions.toList
-  }
-
   def part1(data: List[String], minSavings: Int): Int = {
-    val noCheating = allPaths(data, canCheat = false, findMany = false)
-    println(s"without cheating = ${noCheating.head.f}")
-    val threshold = noCheating.head.f - minSavings
-    println(s"threshold = $threshold")
-    val cheating =
-      allPaths(data, canCheat = true, findMany = true, maxCost = threshold)
-    cheating.size
+    Racetrack(data).savings(minSavings)
   }
 
   def part2(data: List[String]): Long = {
