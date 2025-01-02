@@ -71,7 +71,7 @@ object Day17 {
     def execute(op: OpCode, operand: Int): Computer =
       op match {
         case ADV =>
-          copy(a = a >> combo(operand).toInt, ip = ip + 2)
+          copy(a = a >> combo(operand), ip = ip + 2)
         case BXL =>
           copy(b = b ^ operand, ip = ip + 2)
         case BST =>
@@ -123,43 +123,35 @@ object Day17 {
       var a = initial.a
       var b = initial.b
       var c = initial.c
-      var output = mutable.ArrayBuffer.empty[Int]
+      val output = mutable.ArrayBuffer.empty[Int]
       var ip = 0
       while (ip < program.length) {
         val opCode = OpCode.fromOrdinal(program(ip))
         val operand = program(ip + 1)
         opCode match {
-          case ADV => {
+          case ADV =>
             a = a >> combo(operand, a, b, c)
             ip += 2
-          }
-          case BXL => {
+          case BXL =>
             b = b ^ operand
             ip += 2
-          }
-          case BST => {
+          case BST =>
             b = combo(operand, a, b, c) & 0x7
             ip += 2
-          }
-          case JNZ => {
+          case JNZ =>
             if a == 0 then ip += 2 else ip = combo(operand, a, b, c)
-          }
-          case BXC => {
+          case BXC =>
             b = b ^ c
             ip += 2
-          }
-          case OUT => {
+          case OUT =>
             output += combo(operand, a, b, c) & 0x7
             ip += 2
-          }
-          case BDV => {
+          case BDV =>
             b = a >> combo(operand, a, b, c)
             ip += 2
-          }
-          case CDV => {
+          case CDV =>
             c = a >> combo(operand, a, b, c)
             ip += 2
-          }
         }
       }
       output.toList
@@ -173,37 +165,29 @@ object Day17 {
           val opCode = OpCode.fromOrdinal(program(ip))
           val operand = program(ip + 1)
           opCode match {
-            case ADV => {
+            case ADV =>
               val a1 = a >> combo(operand, a, b, c)
               go(a1, b, c, ip + 2)
-            }
-            case BXL => {
+            case BXL =>
               val b1 = b ^ operand
               go(a, b1, c, ip + 2)
-            }
-            case BST => {
+            case BST =>
               val b1 = combo(operand, a, b, c) & 0x7
               go(a, b1, c, ip + 2)
-            }
-            case JNZ => {
+            case JNZ =>
               if a == 0 then go(a, b, c, ip + 2)
               else go(a, b, c, combo(operand, a, b, c))
-            }
-            case BXC => {
+            case BXC =>
               val b1 = b ^ c
               go(a, b1, c, ip + 2)
-            }
-            case OUT => {
+            case OUT =>
               (combo(operand, a, b, c) & 0x7) #:: go(a, b, c, ip + 2)
-            }
-            case BDV => {
+            case BDV =>
               val b1 = a >> combo(operand, a, b, c)
               go(a, b1, c, ip + 2)
-            }
-            case CDV => {
+            case CDV =>
               val c1 = a >> combo(operand, a, b, c)
               go(a, b, c1, ip + 2)
-            }
           }
         }
       }
@@ -217,40 +201,21 @@ object Day17 {
       output.foldLeft(0) { (acc, n) => acc * 8 + n }
     }
 
-  class FixPointFinder(computer: Computer, program: List[Int]) {
+  private class FixPointFinder(output: Long => Int, program: List[Int]) {
 
-    private def nextMachine(n: BigInt): Computer = computer.copy(a = n)
+    private def fixPoint(a: Long, target: List[Int]): LazyList[Long] = {
+      target match
+        case Nil => LazyList(a)
+        case out :: outs =>
+          for {
+            n <- LazyList.from(0 to 7)
+            if output(a << 3 | n) == out
+            next <- fixPoint(a << 3 | n, outs)
+          } yield next
+    }
 
-    private def isFixedPoint(n: BigInt): Boolean =
-      val machine = nextMachine(n)
-      Executor.runLazy(machine, program) == program
-
-    def firstOfLength(target: Int): Int =
-      LazyList
-        .from(0)
-        .dropWhile { n =>
-          val machine = nextMachine(n)
-          Executor.runLazy(machine, program).take(target).length < target
-        }
-        .head
-
-    def fixPoint: BigInt =
-      @tailrec
-      def go(n: BigInt): BigInt =
-        if isFixedPoint(n) then n
-        else go(n + 1)
-
-      go(BigInt(0))
-
-    def fixPoint2: Int =
-      @tailrec
-      def go(n: Int): Int =
-        val machine = nextMachine(n)
-        val output = Executor.runEager(machine, program)
-        if output == program then n
-        else go(n + 1)
-
-      go(2 << 15)
+    def fixPoint: Long =
+      fixPoint(0L, program.reverse).head
   }
 
   def parse(data: List[String]): (Computer, List[Int]) = {
@@ -277,44 +242,44 @@ object Day17 {
     Executor.runLazy(computer, program).mkString(",")
   }
 
-  def part2(data: List[String]): Int = {
-    val (computer, program) = parse(data)
-    FixPointFinder(computer, program).fixPoint2
+  private def outputExample(a: Long): Int = {
+    /*
+    0 : ADV #3
+    2 : OUT @A
+    4 : JNZ #0
+     */
+    ((a >> 3) & 7).toInt
   }
 
-  @main def explorePart2(): Unit = {
-    val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
-    val (computer, program) = parse(data)
-    for n <- 0 to 1_000 do
-      val machine = computer.copy(a = n)
-      val output = Executor.runEager(machine, program)
-      val asStr = output.mkString(",")
-      val asInt = output.toBase8
-      val asIntRev = output.reverse.toBase8
-      println(
-        s"n = $n -> output = $asStr -> asInt = $asInt  -> asIntRev = $asIntRev"
-      )
+  def part2Example(data: List[String]): Long = {
+    val (_, program) = parse(data)
+    FixPointFinder(outputExample, program).fixPoint
   }
 
-  @main def explorerLength(): Unit = {
-    val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
-    val (computer, program) = parse(data)
-    val finder = FixPointFinder(computer, program)
-    for len <- 0 to 7 do
-      val n = finder.firstOfLength(len)
-      println(s"len = $len -> n = $n ->")
+  private def outputInput(a: Long): Int = {
+    /*
+    0 : BST @A     b <- a & 7
+    2 : BXL #2     b <- b ^ 2
+    4 : CDV @B     c <- a >> b
+    6 : BXL #3     b <- b ^ 3
+    8 : BXC        b <- b ^ c
+    10: OUT @B     output(b & 7)
+    12: ADV #3     a <- a >> 3
+    14: JNZ #0
+     */
+    var b = a & 7
+    b = b ^ 2
+    val c = a >> b
+    b = b ^ 3
+    b = b ^ c
+    (b & 7).toInt
   }
 
-  @main def explorePart2BI(): Unit = {
-    val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
+  def part2(data: List[String]): Long = {
     val (computer, program) = parse(data)
-    val machine = computer.copy(a = BigInt(1) << 45)
-    val output = Executor.runEager(machine, program)
-    val asStr = output.mkString(",")
-    println(
-      s"output = $asStr"
-    )
+    FixPointFinder(outputInput, program).fixPoint
   }
+
   @main def main17(): Unit = {
     val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
     val part1 = Day17.part1(data)

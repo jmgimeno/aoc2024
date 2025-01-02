@@ -40,13 +40,13 @@ class Day17Suite extends FunSuite {
 
   test("part2 - example data") {
     val data = IO.splitLinesAsList(part2).asScala.toList
-    assertEquals(Day17.part2(data), 117440)
+    assertEquals(Day17.part2Example(data), 117440L)
   }
 
 
-  test("part2 - input data".ignore) {
+  test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day17.txt").asScala.toList
-    assertEquals(Day17.part2(data), -1)
+    assertEquals(Day17.part2(data), 37221334433268L)
   }
 
   test("If register C contains 9, the program 2,6 would set register B to 1.") {
