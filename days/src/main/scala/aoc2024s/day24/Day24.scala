@@ -181,11 +181,11 @@ object Day24 {
         _.output
       }
 
-    val inputX = inputs2Gates.keys.filter(_.startsWith("x")).toList.sorted
-    val inputY = inputs2Gates.keys.filter(_.startsWith("y")).toList.sorted
-    val outputZ = outputs2Gates.keys.filter(_.startsWith("z")).toList.sorted
+    private val inputX = inputs2Gates.keys.filter(_.startsWith("x")).toList.sorted
+    private val inputY = inputs2Gates.keys.filter(_.startsWith("y")).toList.sorted
+    private val outputZ = outputs2Gates.keys.filter(_.startsWith("z")).toList.sorted
 
-    // The last bit should be the output of a OR gate
+    // The last bit should be the output of a OR gate (it's a carry)
     def condition1: Set[String] = {
       val last = outputZ.last
       outputs2Gates(last).find(_.isInstanceOf[Gate.OR]).map(_ => Set.empty[String]).getOrElse(Set(last))
@@ -193,49 +193,55 @@ object Day24 {
 
     // All other output bits should be the result of an XOR gate
     def condition2: Set[String] = {
-      val other = outputZ.init
-      other.filterNot { output =>
+      outputZ.init.filterNot { output =>
         val gates = outputs2Gates(output)
-        gates.length == 1 && gates.head.isInstanceOf[Gate.XOR]
-      }
-    }.toSet
+        assert(gates.length == 1)
+        gates.head.isInstanceOf[Gate.XOR]
+      }.toSet
+    }
 
     // One output of (xi XOR yi) should be the input of the XOR gate that outputs zi
+    // Except for the first one, because it has no carry
     def condition3: Set[String] = {
-      inputX.flatMap(x => {
-        val y = x.replace("x", "y")
-        val xXOR = inputs2Gates(x).find(_.isInstanceOf[Gate.XOR]).get
-        val yXOR = inputs2Gates(y).find(_.isInstanceOf[Gate.XOR]).get
-        assert(xXOR == yXOR)
-        val intermediate = xXOR.output
-        val z = x.replace("x", "z")
-        outputs2Gates(z).find(_.isInstanceOf[Gate.XOR]).flatMap { zXOR =>
-          if (zXOR.input1 == intermediate || zXOR.input2 == intermediate) then None else Some(intermediate)
-        }
-      })
-    }.toSet
+      inputX
+        .flatMap(x => {
+          val y = x.replace("x", "y")
+          val xXOR = inputs2Gates(x).find(_.isInstanceOf[Gate.XOR]).get
+          val yXOR = inputs2Gates(y).find(_.isInstanceOf[Gate.XOR]).get
+          assert(xXOR == yXOR)
+          val intermediate = xXOR.output
+          val z = x.replace("x", "z")
+          outputs2Gates(z).find(_.isInstanceOf[Gate.XOR]).flatMap { zXOR =>
+            if zXOR.input1 == intermediate || zXOR.input2 == intermediate then None else Some(intermediate)
+          }
+        })
+        .filterNot(_.endsWith("00"))
+        .toSet
+    }
 
-    // The output of (xi AND yi) should go to an OR gate
+    // The output of (xi AND yi) should go to OR gate
+    // Except for the first one, because it has no carry
     def condition4: Set[String] = {
-      inputX.flatMap(x => {
-        val y = x.replace("x", "y")
-        val xAND = inputs2Gates(x).find(_.isInstanceOf[Gate.AND]).get
-        val yAND = inputs2Gates(y).find(_.isInstanceOf[Gate.AND]).get
-        assert(xAND == yAND)
-        val intermediate = xAND.output
-        val z = x.replace("x", "z")
-        outputs2Gates(z).find(_.isInstanceOf[Gate.OR]).flatMap { zOR =>
-          if (zOR.input1 == intermediate || zOR.input2 == intermediate) then None else Some(intermediate)
+      device.gates
+        .filter { gate =>
+          gate.isInstanceOf[Gate.AND]
+          && (gate.input1.startsWith("x") && gate.input2.startsWith("y")
+            || gate.input1.startsWith("y") && gate.input2.startsWith("x"))
+          && !gate.input1.endsWith("00") && !gate.input2.endsWith("00")
         }
-      })
-    }.toSet
+        .flatMap { gate =>
+          val output = gate.output
+          if inputs2Gates.getOrElse(output, List.empty).forall(_.isInstanceOf[Gate.OR]) then None else Some(output)
+        }
+        .toSet
+    }
 
     // AND gates should not belong to the output
     def condition5: Set[String] = {
       device.gates.collect {
         case Gate.AND(_, _, output) if output.startsWith("z") => output
-      }
-    }.toSet
+      }.toSet
+    }
 
     // OR gates should not belong to the output except for the last bit
     def condition6: Set[String] = {
@@ -243,26 +249,22 @@ object Day24 {
       other.filter { output =>
         val gates = outputs2Gates(output)
         gates.exists(_.isInstanceOf[Gate.OR])
-      }
-    }.toSet
+      }.toSet
+    }
 
-    // A XOR gate either has x and y as inputs or z as an output
+    // An XOR gate either has x and y as inputs or z as an output
     def condition7: Set[String] = {
       device.gates
         .filter(_.isInstanceOf[Gate.XOR])
-        .filterNot(_.output.startsWith("z"))
-        .flatMap(gate => {
-          val input1 = gate.input1
-          val input2 = gate.input2
-          if (input1.startsWith("x") && input2.startsWith("y")) {
-            None
-          } else if (input1.startsWith("y") && input2.startsWith("x")) {
-            None
-          } else {
-            Some(gate.output)
-          }
-        })
-    }.toSet
+        .flatMap { gate =>
+          val outputIsZ = gate.output.startsWith("z")
+          val inputIsXAndY =
+            gate.input1.startsWith("x") && gate.input2.startsWith("y")
+              || gate.input1.startsWith("y") && gate.input2.startsWith("x")
+          if outputIsZ || inputIsXAndY then None else Some(gate.output)
+        }
+        .toSet
+    }
 
     def faultyGates: Set[String] = {
       println(s"condition1 = $condition1")
