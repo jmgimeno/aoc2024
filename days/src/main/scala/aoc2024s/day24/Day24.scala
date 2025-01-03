@@ -26,21 +26,21 @@ object Day24 {
     }
 
     def topologicalSort: List[String] = {
-        val visited = mutable.HashSet.empty[String]
-        val stack = mutable.Stack[String]()
+      val visited = mutable.HashSet.empty[String]
+      val stack = mutable.Stack[String]()
 
-        def visit(vertex: String): Unit = {
-            if (!visited.contains(vertex)) {
-            visited += vertex
-            edges.get(vertex).foreach { neighbors =>
-                neighbors.foreach(visit)
-            }
-            stack.push(vertex)
-            }
+      def visit(vertex: String): Unit = {
+        if (!visited.contains(vertex)) {
+          visited += vertex
+          edges.get(vertex).foreach { neighbors =>
+            neighbors.foreach(visit)
+          }
+          stack.push(vertex)
         }
+      }
 
-        vertices.foreach(visit)
-        stack.toList
+      vertices.foreach(visit)
+      stack.toList
     }
   }
 
@@ -48,9 +48,31 @@ object Day24 {
     case AND(input1: String, input2: String, output: String)
     case OR(input1: String, input2: String, output: String)
     case XOR(input1: String, input2: String, output: String)
+
   }
 
-  class Device(wires: Map[String, Int], gates: List[Gate]) {
+  extension (gate: Gate) {
+
+    def input1: String = gate match {
+      case Gate.AND(input1, _, _) => input1
+      case Gate.OR(input1, _, _)  => input1
+      case Gate.XOR(input1, _, _) => input1
+    }
+
+    def input2: String = gate match {
+      case Gate.AND(_, input2, _) => input2
+      case Gate.OR(_, input2, _)  => input2
+      case Gate.XOR(_, input2, _) => input2
+    }
+
+    def output: String = gate match {
+      case Gate.AND(_, _, output) => output
+      case Gate.OR(_, _, output)  => output
+      case Gate.XOR(_, _, output) => output
+    }
+  }
+
+  class Device(val wires: Map[String, Int], val gates: List[Gate]) {
 
     def toPrecedenceGraph: Graph = {
       val graph = new Graph
@@ -70,38 +92,38 @@ object Day24 {
     }
 
     def gateOrdering(topoSort: List[String]): Ordering[Gate] = {
-        val order = topoSort.zipWithIndex.toMap
-        Ordering.by[Gate, Int] {
-            case Gate.AND(input1, input2, output) => order(output)
-            case Gate.OR(input1, input2, output) => order(output)
-            case Gate.XOR(input1, input2, output) => order(output)
-        }
+      val order = topoSort.zipWithIndex.toMap
+      Ordering.by[Gate, Int] {
+        case Gate.AND(input1, input2, output) => order(output)
+        case Gate.OR(input1, input2, output)  => order(output)
+        case Gate.XOR(input1, input2, output) => order(output)
+      }
     }
 
     def run: Map[String, Int] = {
-        val graph = toPrecedenceGraph
-        val topoSort = graph.topologicalSort
-        val gateOrdering = this.gateOrdering(topoSort)
-        val gates = this.gates.sorted(gateOrdering)
-        val values = mutable.HashMap.empty[String, Int]
-        values ++= wires
-        gates.foreach {
-            case Gate.AND(input1, input2, output) =>
-                values += (output -> (values(input1) & values(input2)))
-            case Gate.OR(input1, input2, output) =>
-                values += (output -> (values(input1) | values(input2)))
-            case Gate.XOR(input1, input2, output) =>
-                values += (output -> (values(input1) ^ values(input2)))
-        }
-        values.toMap
+      val graph = toPrecedenceGraph
+      val topoSort = graph.topologicalSort
+      val gateOrdering = this.gateOrdering(topoSort)
+      val gates = this.gates.sorted(gateOrdering)
+      val values = mutable.HashMap.empty[String, Int]
+      values ++= wires
+      gates.foreach {
+        case Gate.AND(input1, input2, output) =>
+          values += (output -> (values(input1) & values(input2)))
+        case Gate.OR(input1, input2, output) =>
+          values += (output -> (values(input1) | values(input2)))
+        case Gate.XOR(input1, input2, output) =>
+          values += (output -> (values(input1) ^ values(input2)))
+      }
+      values.toMap
     }
 
     def part1: Long = {
-        val wires = run
-        val zWires = wires.keys.filter(_.startsWith("z")).toList.sorted.reverse
-        zWires.foldLeft(0L) { (acc, wire) =>
-            acc * 2 + wires(wire)
-        }
+      val wires = run
+      val zWires = wires.keys.filter(_.startsWith("z")).toList.sorted.reverse
+      zWires.foldLeft(0L) { (acc, wire) =>
+        acc * 2 + wires(wire)
+      }
     }
   }
 
@@ -140,8 +162,126 @@ object Day24 {
     device.part1
   }
 
-  def part2(data: List[String]): Long = {
-    ??? // TODO
+  class Analyser(device: Device) {
+    val inputs2Gates: Map[String, List[Gate]] =
+      val byInput1 = device.gates.groupBy {
+        _.input1
+      }
+      val byInput2 = device.gates.groupBy {
+        _.input2
+      }
+      (byInput1.keySet ++ byInput2.keySet).map { input =>
+        val gates1 = byInput1.getOrElse(input, List.empty)
+        val gates2 = byInput2.getOrElse(input, List.empty)
+        (input, gates1 ++ gates2)
+      }.toMap
+
+    val outputs2Gates: Map[String, List[Gate]] =
+      device.gates.groupBy {
+        _.output
+      }
+
+    val inputX = inputs2Gates.keys.filter(_.startsWith("x")).toList.sorted
+    val inputY = inputs2Gates.keys.filter(_.startsWith("y")).toList.sorted
+    val outputZ = outputs2Gates.keys.filter(_.startsWith("z")).toList.sorted
+
+    // The last bit should be the output of a OR gate
+    def condition1: Set[String] = {
+      val last = outputZ.last
+      outputs2Gates(last).find(_.isInstanceOf[Gate.OR]).map(_ => Set.empty[String]).getOrElse(Set(last))
+    }
+
+    // All other output bits should be the result of an XOR gate
+    def condition2: Set[String] = {
+      val other = outputZ.init
+      other.filterNot { output =>
+        val gates = outputs2Gates(output)
+        gates.length == 1 && gates.head.isInstanceOf[Gate.XOR]
+      }
+    }.toSet
+
+    // One output of (xi XOR yi) should be the input of the XOR gate that outputs zi
+    def condition3: Set[String] = {
+      inputX.flatMap(x => {
+        val y = x.replace("x", "y")
+        val xXOR = inputs2Gates(x).find(_.isInstanceOf[Gate.XOR]).get
+        val yXOR = inputs2Gates(y).find(_.isInstanceOf[Gate.XOR]).get
+        assert(xXOR == yXOR)
+        val intermediate = xXOR.output
+        val z = x.replace("x", "z")
+        outputs2Gates(z).find(_.isInstanceOf[Gate.XOR]).flatMap { zXOR =>
+          if (zXOR.input1 == intermediate || zXOR.input2 == intermediate) then None else Some(intermediate)
+        }
+      })
+    }.toSet
+
+    // The output of (xi AND yi) should go to an OR gate
+    def condition4: Set[String] = {
+      inputX.flatMap(x => {
+        val y = x.replace("x", "y")
+        val xAND = inputs2Gates(x).find(_.isInstanceOf[Gate.AND]).get
+        val yAND = inputs2Gates(y).find(_.isInstanceOf[Gate.AND]).get
+        assert(xAND == yAND)
+        val intermediate = xAND.output
+        val z = x.replace("x", "z")
+        outputs2Gates(z).find(_.isInstanceOf[Gate.OR]).flatMap { zOR =>
+          if (zOR.input1 == intermediate || zOR.input2 == intermediate) then None else Some(intermediate)
+        }
+      })
+    }.toSet
+
+    // AND gates should not belong to the output
+    def condition5: Set[String] = {
+      device.gates.collect {
+        case Gate.AND(_, _, output) if output.startsWith("z") => output
+      }
+    }.toSet
+
+    // OR gates should not belong to the output except for the last bit
+    def condition6: Set[String] = {
+      val other = outputZ.init
+      other.filter { output =>
+        val gates = outputs2Gates(output)
+        gates.exists(_.isInstanceOf[Gate.OR])
+      }
+    }.toSet
+
+    // A XOR gate either has x and y as inputs or z as an output
+    def condition7: Set[String] = {
+      device.gates
+        .filter(_.isInstanceOf[Gate.XOR])
+        .filterNot(_.output.startsWith("z"))
+        .flatMap(gate => {
+          val input1 = gate.input1
+          val input2 = gate.input2
+          if (input1.startsWith("x") && input2.startsWith("y")) {
+            None
+          } else if (input1.startsWith("y") && input2.startsWith("x")) {
+            None
+          } else {
+            Some(gate.output)
+          }
+        })
+    }.toSet
+
+    def faultyGates: Set[String] = {
+      println(s"condition1 = $condition1")
+      println(s"condition2 = $condition2")
+      println(s"condition3 = $condition3")
+      println(s"condition4 = $condition4")
+      println(s"condition5 = $condition5")
+      println(s"condition6 = $condition6")
+      println(s"condition7 = $condition7")
+      condition1 ++ condition2 ++ condition3 ++ condition4 ++ condition5 ++ condition6 ++ condition7
+    }
+  }
+
+  def part2(data: List[String]): String = {
+    val device = Parser.parse(data)
+    val analyser = new Analyser(device)
+    val faultyGates = analyser.faultyGates
+    assert(faultyGates.size == 8)
+    faultyGates.toList.sorted.mkString(",")
   }
 
   @main def main24(): Unit = {

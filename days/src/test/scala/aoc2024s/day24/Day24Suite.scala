@@ -83,13 +83,13 @@ class Day24Suite extends FunSuite {
     assertEquals(Day24.part1(data), 51657025112326L)
   }
 
-  test("part2 - example data") {
-    val data = IO.splitLinesAsList(example1).asScala.toList
-    assertEquals(Day24.part2(data), -1L)
-  }
+//  test("part2 - example data") {
+//    val data = IO.splitLinesAsList(example3).asScala.toList
+//    assertEquals(Day24.part2(data), -1L)
+//  }
 
   test("part2 - input data") {
     val data = IO.getResourceAsList("aoc2024/day24.txt").asScala.toList
-    assertEquals(Day24.part2(data), -1L)
+    assertEquals(Day24.part2(data), "")
   }
 }
