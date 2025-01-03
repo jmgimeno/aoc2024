@@ -253,9 +253,11 @@ object Day24 {
     }
 
     // An XOR gate either has x and y as inputs or z as an output
+    // Except for the first one, because it has no carry
     def condition7: Set[String] = {
       device.gates
         .filter(_.isInstanceOf[Gate.XOR])
+        .filterNot(gate => gate.input1.endsWith("00") || gate.input2.endsWith("00") || gate.output.endsWith("00"))
         .flatMap { gate =>
           val outputIsZ = gate.output.startsWith("z")
           val inputIsXAndY =
