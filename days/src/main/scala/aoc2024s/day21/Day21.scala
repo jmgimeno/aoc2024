@@ -2,7 +2,9 @@ package aoc2024s.day21
 
 import utils.IO
 
-import scala.annotation.{tailrec, targetName}
+import scala.annotation.targetName
+import scala.collection.mutable
+
 import scala.jdk.CollectionConverters.*
 
 object Day21 {
@@ -26,34 +28,6 @@ object Day21 {
     def keyPositions: Map[Char, Position]
 
     def invalid: Position
-
-//    private def allShortestPaths(from: Char, to: Char): List[String] = {
-//      // find all shortest paths from 'from' to 'two' that do not
-//      // pass through an invalid key nor go out of bounds
-//      case class Node(pos: Position, path: String, distance: Int)
-//      val fromPos = keyPositions(from)
-//      val toPos = keyPositions(to)
-//      var minDistance = Int.MaxValue
-//      val queue = scala.collection.mutable.Queue(Node(fromPos, "", 0))
-//      val distances = scala.collection.mutable.Map
-//        .WithDefault[Position, Int](scala.collection.mutable.Map(fromPos -> 0), _ => Int.MaxValue)
-//      val paths = scala.collection.mutable.Set.empty[String]
-//      while queue.nonEmpty do
-//        val node = queue.dequeue()
-//        if node.pos == toPos then
-//          if node.distance < minDistance then
-//            minDistance = node.distance
-//            paths.clear()
-//            paths += node.path
-//          else if node.distance == minDistance then paths += node.path
-//        else if node.distance < minDistance then
-//          for dir <- Direction.values do
-//            val nextPos = dir.move(node.pos)
-//            if distances(nextPos) > node.distance + 1 then distances(nextPos) = node.distance + 1
-//            if keyPositions.values.toSet.contains(nextPos) then
-//              queue.enqueue(Node(nextPos, node.path + dir.name, node.distance + 1))
-//      paths.toList
-//    }
 
     private def allShortestPaths(from: Char, to: Char): List[String] = {
       val fromPos = keyPositions(from)
@@ -124,44 +98,51 @@ object Day21 {
     override def invalid: Position = Position(0, 0)
   }
 
-  private object Runner {
+  private class Runner(steps: Int) {
 
-    def part1(data: List[String]): Long = {
-      data.map(complexity(2)).sum
+    private val cache = mutable.Map.empty[(Char, Char, Int), Long]
+
+    def run(data: List[String]): Long = {
+      data.map(complexity).sum
     }
 
-    def part2(data: List[String]): Long = {
-      ??? // TODO
+    private def complexity(code: String): Long = {
+      shortest(code) * code.init.toLong
     }
+    
+    private def shortest(code: String): Long = {
 
-    private def complexity(steps: Int)(code: String): Long = {
-      shortest(steps)(code) * code.init.toLong
-    }
-
-    private def shortest(steps: Int)(code: String): Long = {
-      val numerical = new NumericalKeyPad
-      @tailrec
-      def go(codes: List[String], i: Int): List[String] = {
-        val directional = new DirectionalKeyPad
-        if i == 0 then codes
-        else go(selectShortest(codes.flatMap(directional.inputs)), i - 1)
+      def shortestStep(from: Char, to: Char, level: Int): Long = {
+        val keyPad = if level == 0 then new NumericalKeyPad else new DirectionalKeyPad
+        keyPad
+          .shortestPaths(from -> to)
+          .map(path => shortest(path + "A", level + 1))
+          .min
       }
-      go(numerical.inputs(code), steps).head.length
-    }
 
-    private def selectShortest(s1: List[String]) = {
-      val s1ByLength = s1.groupBy(_.length)
-      val s1Min = s1ByLength(s1ByLength.keys.min)
-      s1Min
+      def cachedShortestStep(from: Char, to: Char, level: Int): Long = {
+        cache.getOrElseUpdate((from, to, level), shortestStep(from, to, level))
+      }
+
+      def shortest(code: String, level: Int): Long = {
+        if level == steps then code.length
+        else
+          ("A" + code)
+            .sliding(2)
+            .map { pair => cachedShortestStep(pair(0), pair(1), level) }
+            .sum
+      }
+
+      shortest(code, 0)
     }
   }
-
+  
   def part1(data: List[String]): Long = {
-    Runner.part1(data)
+    Runner(3).run(data)
   }
 
   def part2(data: List[String]): Long = {
-    Runner.part2(data)
+    Runner(26).run(data)
   }
 
   @main def main21(): Unit = {
