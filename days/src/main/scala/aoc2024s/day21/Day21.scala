@@ -30,6 +30,9 @@ object Day21 {
     def invalid: Position
 
     private def allShortestPaths(from: Char, to: Char): List[String] = {
+      // The shortest path from one key to another is either a straight line or a path with a single turn
+      // Paths with more than one turn are not considered because they generate longer sequences
+      // at the higher levels
       val fromPos = keyPositions(from)
       val toPos = keyPositions(to)
       val dx = toPos.x - fromPos.x
@@ -66,7 +69,7 @@ object Day21 {
     }
   }
 
-  private class NumericalKeyPad extends KeyPad {
+  private object NumericalKeyPad extends KeyPad {
 
     override def keyPositions: Map[Char, Position] = Map(
       '7' -> Position(0, 0),
@@ -85,7 +88,7 @@ object Day21 {
     override def invalid: Position = Position(0, 3)
   }
 
-  private class DirectionalKeyPad extends KeyPad {
+  private object DirectionalKeyPad extends KeyPad {
 
     override def keyPositions: Map[Char, Position] = Map(
       '^' -> Position(1, 0),
@@ -107,33 +110,33 @@ object Day21 {
     }
 
     private def complexity(code: String): Long = {
-      shortest(code) * code.init.toLong
+      shortestLength(code) * code.init.toLong
     }
     
-    private def shortest(code: String): Long = {
+    private def shortestLength(code: String): Long = {
 
-      def shortestStep(from: Char, to: Char, level: Int): Long = {
-        val keyPad = if level == 0 then new NumericalKeyPad else new DirectionalKeyPad
+      def shortestStepLength(from: Char, to: Char, level: Int): Long = {
+        val keyPad = if level == 0 then NumericalKeyPad else DirectionalKeyPad
         keyPad
           .shortestPaths(from -> to)
-          .map(path => shortest(path + "A", level + 1))
+          .map(path => shortestLength(path + "A", level + 1))
           .min
       }
 
-      def cachedShortestStep(from: Char, to: Char, level: Int): Long = {
-        cache.getOrElseUpdate((from, to, level), shortestStep(from, to, level))
+      inline def cachedShortestStepLength(from: Char, to: Char, level: Int): Long = {
+        cache.getOrElseUpdate((from, to, level), shortestStepLength(from, to, level))
       }
 
-      def shortest(code: String, level: Int): Long = {
+      def shortestLength(code: String, level: Int): Long = {
         if level == steps then code.length
         else
           ("A" + code)
             .sliding(2)
-            .map { pair => cachedShortestStep(pair(0), pair(1), level) }
+            .map { pair => cachedShortestStepLength(pair(0), pair(1), level) }
             .sum
       }
 
-      shortest(code, 0)
+      shortestLength(code, 0)
     }
   }
   
