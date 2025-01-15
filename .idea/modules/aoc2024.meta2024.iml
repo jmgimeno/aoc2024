@@ -3,14 +3,25 @@
   <component name="DisplayModuleName">
     <option name="name" value="meta2024" />
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_23" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_23_PREVIEW">
+    <output url="file://$MODULE_DIR$/../../meta/target/scala-3.6.2/classes" />
+    <output-test url="file://$MODULE_DIR$/../../meta/target/scala-3.6.2/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../meta">
+      <sourceFolder url="file://$MODULE_DIR$/../../meta/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../meta/src/main/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/../../meta/src/main/scala" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../meta/src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../meta/src/test/resources" type="java-test-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/../../meta/src/test/scala" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/../../meta/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="aoc2024.meta2024.main" />
-    <orderEntry type="module" module-name="aoc2024.meta2024.test" production-on-test="" />
+    <orderEntry type="library" name="sbt: scala-sdk-3.6.2" level="project" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala3-library_3:3.6.2:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.lihaoyi:requests_3:0.9.0:jar" level="project" />
+    <orderEntry type="library" name="sbt: org.scala-lang:scala-library:2.13.15:jar" level="project" />
+    <orderEntry type="library" name="sbt: com.lihaoyi:geny_3:1.0.0:jar" level="project" />
   </component>
 </module>

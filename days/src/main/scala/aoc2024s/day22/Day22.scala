@@ -2,12 +2,11 @@ package aoc2024s.day22
 
 import utils.IO
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object Day22 {
 
-  class Sequence(start: Long) {
+  class Secrets(start: Long) {
 
     private val MODULUS = 16777216L - 1L
 
@@ -26,141 +25,41 @@ object Day22 {
       Iterator.iterate(start)(next).drop(n).next()
     }
 
-    def prices(n: Int): Vector[Int] = {
-      Iterator.iterate(start)(next).take(n).map(l => (l % 10).toInt).toVector
+    def prices: Iterator[Int] = {
+      Iterator.iterate(start)(next).map(l => (l % 10).toInt)
     }
   }
 
-  enum Pattern {
-    case Zero
-    case One(one: Int)
-    case Two(one: Int, two: Int)
-    case Three(one: Int, two: Int, three: Int)
-    case Four(one: Int, two: Int, three: Int, four: Int)
+  class Optimizer(data: List[Long]) {
+    private val size = 2001
 
-    def expand: Seq[Pattern] = {
-      val diffs = -9 to +9
-      this match {
-        case Zero                   => diffs.map(One(_))
-        case One(one)               => diffs.map(Two(one, _))
-        case Two(one, two)          => diffs.map(Three(one, two, _))
-        case Three(one, two, three) => diffs.map(Four(one, two, three, _))
-        case _ => sys.error("the pattern is already complete")
-      }
-    }
-  }
+    private val totals = Array.fill(19 * 19 * 19 * 19)(0)
 
-  class Changes(prices: Vector[Int]) {
-
-    val changes: Vector[Int] =
-      prices.sliding(2).map { case Vector(a, b) => b - a }.toVector
-
-    val masks: Array[BigInt] =
-      Array.fill(19)(BigInt(0)) // one mask per difference, from -9 to +9
-
-    changes.zipWithIndex.foreach((c, i) =>
-      masks(c + 9) = masks(c + 9).setBit(i)
-    )
-
-    def prices(mask: BigInt): List[Int] = {
-      (0 until changes.size - 3) // the last three does not count
-        .filter(mask.testBit)
-        .map(i => prices(i + 4))
-        .toList
-    }
-
-    def maxBound(pattern: Pattern): Option[Int] = pattern match
-      case Pattern.Zero => sys.error("zero pattern has no bound")
-      case Pattern.One(one) =>
-        val maskOnes = masks(one + 9)
-        prices(maskOnes).maxOption
-      case Pattern.Two(one, two) =>
-        val maskOnes = masks(one + 9)
-        val maskTwos = masks(two + 9)
-        prices(maskOnes & maskTwos >> 1).maxOption
-      case Pattern.Three(one, two, three) =>
-        val maskOnes = masks(one + 9)
-        val maskTwos = masks(two + 9)
-        val maskThrees = masks(three + 9)
-        prices(maskOnes & maskTwos >> 1 & maskThrees >> 2).maxOption
-      case Pattern.Four(one, two, three, four) =>
-        val maskOnes = masks(one + 9)
-        val maskTwos = masks(two + 9)
-        val maskThrees = masks(three + 9)
-        val maskFours = masks(four + 9)
-        prices(
-          maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3
-        ).maxOption
-
-    def evaluate(pattern: Pattern.Four): Option[Int] = {
-      val Pattern.Four(one, two, three, four) = pattern
-      val maskOnes = masks(one + 9)
-      val maskTwos = masks(two + 9)
-      val maskThrees = masks(three + 9)
-      val maskFours = masks(four + 9)
-      val mask = maskOnes & maskTwos >> 1 & maskThrees >> 2 & maskFours >> 3
-      prices(mask).headOption
-    }
-  }
-
-  class Optimizer(data: List[Long], size: Int = 2001) {
-
-    private val changes = data.map(n => Changes(Sequence(n).prices(size)))
-
-    case class Node(pattern: Pattern, maxBound: Int)
-
-    given Ordering[Node] with
-      def compare(n1: Node, n2: Node): Int =
-        n1.maxBound - n2.maxBound // the greater the maxBound the greater the priority
-
-    def maxBound(pattern: Pattern): Option[Int] = {
-      val maxBounds = changes
-        .map(_.maxBound(pattern))
-        .filter(_.isDefined)
-        .map(_.get)
-        if maxBounds.isEmpty then None else Some(maxBounds.sum)
-    }
-
-    def evaluate(pattern: Pattern.Four): Option[Int] = {
-      val matchedPrices = changes
-        .map(_.evaluate(pattern))
-        .filter(_.isDefined)
-        .map(_.get)
-      if matchedPrices.isEmpty then None else Some(matchedPrices.sum)
-    }
-
-    def greedyMinBound: Int = {
-      val one = (-9 to +9).map(d => (maxBound(Pattern.One(d)), d)).filter(_._1.isDefined).map(p => (p._1.get, p._2)).max._2
-      val two = (-9 to +9).map(d => (maxBound(Pattern.Two(one, d)), d)).filter(_._1.isDefined).map(p => (p._1.get, p._2)).max._2
-      val three = (-9 to +9).map(d => (maxBound(Pattern.Three(one, two, d)), d)).filter(_._1.isDefined).map(p => (p._1.get, p._2)).max._2
-      (-9 to +9).map(d => evaluate(Pattern.Four(one, two, three, d))).filter(_.isDefined).map(_.get).max
+    private def toIndex(d1: Int, d2: Int, d3: Int, d4: Int): Int = {
+      (d1 + 9) * 19 * 19 * 19 + (d2 + 9) * 19 * 19 + (d3 + 9) * 19 + (d4 + 9)
     }
 
     def max: Int = {
-      var minBound = greedyMinBound
-      val start = Node(Pattern.Zero, Int.MaxValue)
-      val queue = mutable.PriorityQueue(start)
-      while (queue.nonEmpty) {
-        val current = queue.dequeue()
-        current.pattern match
-          case solution: Pattern.Four =>
-            val value = evaluate(solution)
-            if value.isDefined && value.get > minBound then minBound = value.get
-          case pattern =>
-            for (neighbour <- pattern.expand) {
-              val bound = maxBound(neighbour)
-              if bound.isDefined && bound.get > minBound then
-                queue.enqueue(Node(neighbour, bound.get))
-            }
-      }
-      minBound
+      data.foreach(n => {
+        val notSeen = Array.fill(19 * 19 * 19 * 19)(true)
+        val prices = Secrets(n).prices.take(size).toList
+        val changes = prices.sliding(2).map { group => group(1) - group(0) }
+        val indexes = changes.sliding(4).map { group => toIndex(group(0), group(1), group(2), group(3)) }
+        prices.drop(4).zip(indexes).foreach { case (change, index) =>
+          if (notSeen(index)) {
+            notSeen(index) = false
+            totals(index) += change
+          }
+        }
+      })
+      totals.max
     }
   }
 
   def parse(data: List[String]): List[Long] = data.map(_.toLong)
 
   def part1(data: List[String]): Long = {
-    parse(data).map(Sequence(_).nth(2000)).sum
+    parse(data).map(Secrets(_).nth(2000)).sum
   }
 
   def part2(data: List[String]): Int = {
