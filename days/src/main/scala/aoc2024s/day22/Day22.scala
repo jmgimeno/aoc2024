@@ -2,6 +2,9 @@ package aoc2024s.day22
 
 import utils.IO
 
+import java.util.concurrent.Executors
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.jdk.CollectionConverters.*
 
 object Day22 {
@@ -30,16 +33,15 @@ object Day22 {
     }
   }
 
-  class Optimizer(data: List[Long]) {
+  class Optimizer(data: Seq[Long]) {
     private val size = 2001
-
-    private val totals = Array.fill(19 * 19 * 19 * 19)(0)
 
     private def toIndex(d1: Int, d2: Int, d3: Int, d4: Int): Int = {
       (d1 + 9) * 19 * 19 * 19 + (d2 + 9) * 19 * 19 + (d3 + 9) * 19 + (d4 + 9)
     }
 
-    def max: Int = {
+    def totals: Array[Int] = {
+      val totals = Array.fill(19 * 19 * 19 * 19)(0)
       data.foreach(n => {
         val notSeen = Array.fill(19 * 19 * 19 * 19)(true)
         val prices = Secrets(n).prices.take(size).toList
@@ -52,6 +54,32 @@ object Day22 {
           }
         }
       })
+      totals
+    }
+
+    def max: Int = {
+      totals.max
+    }
+  }
+
+  class ParallelOptimizer(data: Seq[Long]) {
+    private val numThreads = math.min(5, Runtime.getRuntime.availableProcessors()) // Manually adjusted
+    private val pool = Executors.newFixedThreadPool(numThreads)
+    private val blocks = data.grouped(math.max(1, data.size / numThreads))
+    given ec: ExecutionContext = ExecutionContext.fromExecutor(pool)
+
+    def max: Int = {
+      val futures = blocks.map { block =>
+        Future {
+          Optimizer(block).totals
+        }
+      }
+      val results = Await.result(Future.sequence(futures), Duration.Inf)
+      val totals = results.next
+      for {
+        block <- results
+        i <- 0 until 19 * 19 * 19 * 19
+      } totals(i) += block(i)
       totals.max
     }
   }
@@ -64,7 +92,7 @@ object Day22 {
 
   def part2(data: List[String]): Int = {
     val parsed = parse(data)
-    Optimizer(parsed).max
+    ParallelOptimizer(parsed).max
   }
 
   @main def main22(): Unit = {
